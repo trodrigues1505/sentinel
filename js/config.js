@@ -22,7 +22,6 @@ export const CONFIG = {
   })(),
 
   gps: {
-    // Intervalo mínimo entre pontos enviados ao Supabase (ms)
     minInterval: 15_000,
     options: {
       enableHighAccuracy: true,
@@ -32,14 +31,31 @@ export const CONFIG = {
   },
 
   webrtc: {
-    // Servidores STUN públicos para negociação P2P
+    // STUN + TURN via Metered — funciona entre redes diferentes (dados móveis ↔ WiFi)
     iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun.relay.metered.ca:80' },
+      {
+        urls:       'turn:global.relay.metered.ca:80',
+        username:   'd509ccafec3ba693ad59608c',
+        credential: 'Wv5rr4Iv9waTwcpY',
+      },
+      {
+        urls:       'turn:global.relay.metered.ca:80?transport=tcp',
+        username:   'd509ccafec3ba693ad59608c',
+        credential: 'Wv5rr4Iv9waTwcpY',
+      },
+      {
+        urls:       'turn:global.relay.metered.ca:443',
+        username:   'd509ccafec3ba693ad59608c',
+        credential: 'Wv5rr4Iv9waTwcpY',
+      },
+      {
+        urls:       'turns:global.relay.metered.ca:443?transport=tcp',
+        username:   'd509ccafec3ba693ad59608c',
+        credential: 'Wv5rr4Iv9waTwcpY',
+      },
     ],
-    // ID da sala — fixo para uso solo
-    roomId: 'main',
-    // Intervalo de polling para novos sinais WebRTC (ms)
+    roomId:       'main',
     pollInterval: 1_500,
   },
 };
