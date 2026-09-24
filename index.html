@@ -3,37 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0a0c10">
+<meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Sentinel">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="&#x200B;">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="css/app.css">
-<title>Sentinel — Cliente</title>
+<title>&#x200B;</title>
 </head>
 <body>
 
-<!-- ═══ SETUP SCREEN ═══ -->
+<!-- ═══ SETUP ═══ -->
 <div class="setup-screen" id="setup-screen">
   <div class="setup-logo">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
     </svg>
   </div>
-
   <div>
     <div class="setup-title">Sentinel</div>
-    <div class="setup-sub">Autorize o acesso à câmera e localização para ativar o monitoramento. Você faz isso uma única vez.</div>
+    <div class="setup-sub">Autorize câmera e localização para ativar o monitoramento. Você faz isso uma única vez.</div>
   </div>
-
   <div class="setup-perm-list">
     <div class="setup-perm-item">
       <div class="perm-icon green">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
-          <circle cx="12" cy="10" r="3"/>
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
         </svg>
       </div>
       <div class="perm-info">
@@ -42,29 +39,21 @@
       </div>
       <div class="perm-check" id="perm-gps"></div>
     </div>
-
     <div class="setup-perm-item">
       <div class="perm-icon blue">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M23 7l-7 5 7 5V7z"/>
-          <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
         </svg>
       </div>
       <div class="perm-info">
-        <div class="perm-name">Câmera</div>
+        <div class="perm-name">Câmera e microfone</div>
         <div class="perm-desc">Feed de segurança ao vivo</div>
       </div>
       <div class="perm-check" id="perm-cam"></div>
     </div>
   </div>
-
   <div style="width:100%;display:flex;flex-direction:column;gap:8px">
-    <button class="btn btn-primary btn-full" id="btn-setup">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-      </svg>
-      Autorizar e entrar
-    </button>
+    <button class="btn btn-primary btn-full" id="btn-setup">Autorizar e entrar</button>
     <button class="btn btn-ghost btn-full" id="btn-skip">Entrar sem autorizar</button>
   </div>
 </div>
@@ -82,6 +71,13 @@
       <span class="brand-name">Sentinel</span>
     </div>
     <div class="header-right">
+      <!-- Botão pausar/retomar monitoramento (item 6) -->
+      <button class="btn btn-ghost" id="btn-monitor-toggle" style="height:32px;padding:0 12px;font-size:12px;gap:5px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="monitor-icon">
+          <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+        </svg>
+        <span id="monitor-label">Pausar</span>
+      </button>
       <div class="status-pill" id="status-pill">Ativo</div>
     </div>
   </header>
@@ -109,179 +105,112 @@
         </div>
         <div class="stat">
           <div class="stat-label">Transmissão</div>
-          <div class="webrtc-status" style="margin-top:4px">
-            <div class="webrtc-dot" id="rtc-dot"></div>
-            <span id="rtc-label">inativa</span>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:4px">
+            <div class="rtc-dot" id="rtc-dot"></div>
+            <span style="font-size:11px;font-weight:600;color:var(--t3)" id="rtc-label">inativa</span>
           </div>
           <div class="stat-sub" style="margin-top:4px">WebRTC P2P</div>
         </div>
       </div>
 
-      <!-- MAPA -->
+      <!-- CÂMERA — maior (item 1) -->
       <div class="card">
         <div class="card-header">
           <div class="card-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
-              <circle cx="12" cy="10" r="3"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
             </svg>
-            Posição atual
+            Câmera
           </div>
-          <div class="card-actions">
-            <button class="btn btn-ghost" style="height:32px;padding:0 12px;font-size:12px" id="btn-gps-start">Rastrear</button>
-            <button class="btn btn-danger" style="height:32px;padding:0 12px;font-size:12px;display:none" id="btn-gps-stop">Parar</button>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span class="chip chip-gray" id="cam-chip">Inativa</span>
+            <!-- Fullscreen -->
+            <button class="btn btn-ghost btn-icon" id="btn-fullscreen" title="Tela cheia" style="display:none;width:32px;height:32px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15,3 21,3 21,9"/><polyline points="9,21 3,21 3,15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
           </div>
         </div>
-        <div class="map-wrap">
+        <!-- Altura maior para câmera (item 1) -->
+        <div class="cam-wrap" style="height:280px" id="cam-wrap">
+          <div class="cam-live-badge" id="cam-live-badge">AO VIVO</div>
+          <video id="cam-video" autoplay muted playsinline></video>
+          <div class="cam-placeholder" id="cam-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+            </svg>
+            <p>Câmera inativa</p>
+            <span>Aguardando comando remoto</span>
+          </div>
+          <!-- Indicador gravação (item 5) -->
+          <div id="rec-badge" style="display:none;position:absolute;top:10px;right:10px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;align-items:center;gap:5px">
+            <div style="width:6px;height:6px;border-radius:50%;background:#fff;animation:blink 1s infinite"></div>
+            REC
+          </div>
+        </div>
+        <div id="mic-status" style="display:none;align-items:center;gap:8px;padding:8px 16px;background:rgba(217,119,6,.06);border-top:1px solid rgba(217,119,6,.12)">
+          <div style="width:7px;height:7px;border-radius:50%;background:var(--yellow);animation:pulse 1.5s infinite"></div>
+          <span style="font-size:12px;font-weight:600;color:var(--yellow)">Microfone ativo</span>
+        </div>
+        <div style="padding:12px;display:flex;gap:8px">
+          <button class="btn btn-primary" style="flex:1" id="btn-cam-start">Ativar câmera</button>
+          <button class="btn btn-danger" style="flex:1;display:none" id="btn-cam-stop">Parar</button>
+          <button class="btn btn-ghost btn-icon" id="btn-cam-flip" style="display:none" title="Inverter câmera">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+            </svg>
+          </button>
+          <!-- Botão gravar (item 5) -->
+          <button class="btn btn-ghost btn-icon" id="btn-rec" style="display:none" title="Gravar">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="8" fill="var(--red)" stroke="var(--red)"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ENDEREÇO + GPS (item 3) -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            Localização
+          </div>
+          <!-- Botão atualizar (item 4) e toggle rastro (item 2) -->
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost" style="height:30px;padding:0 10px;font-size:11px" id="btn-trail-toggle">
+              Com rastro
+            </button>
+            <button class="btn btn-ghost btn-icon" style="width:30px;height:30px" id="btn-refresh-gps" title="Atualizar posição">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <!-- Endereço legível (item 3) -->
+        <div style="padding:12px 16px;border-bottom:1px solid var(--b1)">
+          <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Endereço</div>
+          <div style="font-size:13px;font-weight:500;color:var(--t1);line-height:1.4" id="address-display">Aguardando GPS…</div>
+        </div>
+        <div class="map-wrap" id="map-wrap-home">
           <canvas id="map-canvas"></canvas>
           <div class="map-overlay" id="map-overlay">
             <div class="map-overlay-label">Posição</div>
             <div class="map-overlay-value" id="map-coord">—</div>
           </div>
-          <div class="map-zoom-controls">
-            <div class="zoom-btn" id="zoom-in">+</div>
-            <div class="zoom-btn" id="zoom-out">−</div>
-          </div>
           <div class="empty-state" id="map-empty">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
-              <circle cx="12" cy="10" r="3"/>
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
             </svg>
             <p>Sem sinal GPS</p>
-            <span>Toque em Rastrear</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- CÂMERA -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M23 7l-7 5 7 5V7z"/>
-              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-            </svg>
-            Câmera
-          </div>
-          <span class="chip chip-gray" id="cam-chip">Inativa</span>
-        </div>
-        <div class="cam-wrap">
-          <div class="cam-live-badge" id="cam-live-badge">AO VIVO</div>
-          <video id="cam-video" autoplay muted playsinline></video>
-          <div class="cam-placeholder" id="cam-placeholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M23 7l-7 5 7 5V7z"/>
-              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-            </svg>
-            <p>Câmera inativa</p>
-            <span>Toque em Ativar câmera</span>
-          </div>
-        </div>
-        <!-- Indicador de microfone ativo -->
-        <div id="mic-status" style="display:none;align-items:center;gap:8px;padding:8px 16px;background:rgba(245,158,11,0.08);border-top:1px solid rgba(245,158,11,0.15)">
-          <div style="width:8px;height:8px;border-radius:50%;background:var(--yellow);animation:pulse 1.5s infinite"></div>
-          <span style="font-size:12px;font-weight:600;color:var(--yellow)">Microfone ativo</span>
-        </div>
-
-        <div style="padding:12px;display:flex;gap:8px">
-          <button class="btn btn-primary" style="flex:1" id="btn-cam-start">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <polygon points="10,8 16,12 10,16 10,8"/>
-            </svg>
-            Ativar câmera
-          </button>
-          <button class="btn btn-danger" style="flex:1;display:none" id="btn-cam-stop">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="6" y="6" width="12" height="12"/>
-            </svg>
-            Parar
-          </button>
-          <button class="btn btn-ghost btn-icon" id="btn-cam-flip" style="display:none" title="Inverter câmera">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
-              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ─── GPS ─── -->
-    <div class="view" id="view-gps">
-
-      <div class="btn-row">
-        <button class="btn btn-primary" id="btn-gps-start2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <polygon points="10,8 16,12 10,16 10,8"/>
-          </svg>
-          Iniciar
-        </button>
-        <button class="btn btn-danger" id="btn-gps-stop2" style="display:none">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="6" y="6" width="12" height="12"/>
-          </svg>
-          Parar
-        </button>
-        <button class="btn btn-ghost" id="btn-gps-export">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-            <polyline points="7,10 12,15 17,10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          CSV
-        </button>
-      </div>
-
-      <div class="card" style="overflow:hidden;padding:0">
-        <div class="map-wrap" style="height:260px">
-          <canvas id="map-canvas2"></canvas>
-          <div class="map-overlay" id="map-overlay2">
-            <div class="map-overlay-label">Posição atual</div>
-            <div class="map-overlay-value" id="map-coord2">—</div>
-          </div>
-          <div class="map-zoom-controls">
-            <div class="zoom-btn" id="zoom-in2">+</div>
-            <div class="zoom-btn" id="zoom-out2">−</div>
-          </div>
-          <div class="empty-state" id="map-empty2">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
-            <p>Aguardando GPS</p>
-            <span>Permita a localização quando solicitado</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="coord-grid">
-        <div class="coord-box">
-          <div class="coord-label">Lat</div>
-          <div class="coord-val" id="coord-lat">—</div>
-        </div>
-        <div class="coord-box">
-          <div class="coord-label">Lon</div>
-          <div class="coord-val" id="coord-lon">—</div>
-        </div>
-        <div class="coord-box">
-          <div class="coord-label">±m</div>
-          <div class="coord-val" id="coord-acc">—</div>
-        </div>
-      </div>
-
-      <div class="section-label">Histórico</div>
-      <div class="card" style="padding:0">
-        <div id="hist-list">
-          <div class="empty-state">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12,6 12,12 16,14"/>
-            </svg>
-            <p>Sem registros</p>
-            <span>Inicie o rastreamento</span>
+            <span>Iniciando rastreamento…</span>
           </div>
         </div>
       </div>
@@ -290,27 +219,6 @@
 
     <!-- ─── CONFIG ─── -->
     <div class="view" id="view-config">
-
-      <div class="section-label">GPS</div>
-      <div class="card" style="padding:0">
-        <div class="toggle-list">
-          <div class="toggle-row">
-            <div class="toggle-info">
-              <div class="toggle-name">Alta precisão</div>
-              <div class="toggle-desc">Usa mais bateria, mais exato</div>
-            </div>
-            <div class="sw on" id="sw-precision"></div>
-          </div>
-          <div class="toggle-row">
-            <div class="toggle-info">
-              <div class="toggle-name">Histórico offline</div>
-              <div class="toggle-desc">Salva pontos no dispositivo</div>
-            </div>
-            <div class="sw on"></div>
-          </div>
-        </div>
-      </div>
-
       <div class="section-label">Câmera</div>
       <div class="card" style="padding:0">
         <div class="toggle-list">
@@ -326,14 +234,7 @@
 
       <div class="section-label">Dados</div>
       <div class="btn-row">
-        <button class="btn btn-ghost" style="flex:1" id="btn-export-cfg">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-            <polyline points="7,10 12,15 17,10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Exportar CSV
-        </button>
+        <button class="btn btn-ghost" style="flex:1" id="btn-export-cfg">Exportar CSV</button>
         <button class="btn btn-danger" style="flex:1" id="btn-clear">Limpar histórico</button>
       </div>
 
@@ -350,12 +251,10 @@
           </div>
         </div>
       </div>
-
     </div>
 
   </div>
 
-  <!-- BOTTOM NAV -->
   <nav class="bottomnav">
     <div class="nav-tab active" data-tab="home">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -363,13 +262,6 @@
         <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
       </svg>
       Início
-    </div>
-    <div class="nav-tab" data-tab="gps">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
-        <circle cx="12" cy="10" r="3"/>
-      </svg>
-      GPS
     </div>
     <div class="nav-tab" data-tab="config">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -391,56 +283,40 @@ import { CameraManager } from './js/camera.js';
 import { WebRTCManager } from './js/webrtc.js';
 import { UIController }  from './js/ui.js';
 
-// ── Service Worker ────────────────────────────
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
-// ── Instâncias ────────────────────────────────
-const ui  = new UIController();
-let gps   = null;
-let cam   = null;
-let rtc   = null;
+const ui = new UIController();
+let gps  = null, cam = null, rtc = null;
+let monitoring   = true;   // item 6
+let showTrail    = true;   // item 2
+let recorder     = null;   // item 5
+let recChunks    = [];
 
 // ── Setup ─────────────────────────────────────
 const SETUP_KEY = 'sentinel_setup_done';
-
 if (localStorage.getItem(SETUP_KEY)) {
   showApp();
 } else {
   document.getElementById('btn-setup').addEventListener('click', runSetup);
   document.getElementById('btn-skip').addEventListener('click', () => {
-    localStorage.setItem(SETUP_KEY, '1');
-    showApp();
+    localStorage.setItem(SETUP_KEY, '1'); showApp();
   });
 }
 
 async function runSetup() {
   const btn = document.getElementById('btn-setup');
-  btn.disabled    = true;
-  btn.textContent = 'Solicitando permissões…';
-
-  // GPS
+  btn.disabled = true; btn.textContent = 'Solicitando permissões…';
   try {
-    await new Promise((res, rej) =>
-      navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8_000 })
-    );
+    await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 }));
     document.getElementById('perm-gps').className = 'perm-check done';
-  } catch {
-    document.getElementById('perm-gps').className = 'perm-check fail';
-  }
-
-  // Câmera
+  } catch { document.getElementById('perm-gps').className = 'perm-check fail'; }
   try {
-    const s = await navigator.mediaDevices.getUserMedia({ video: true });
+    const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     s.getTracks().forEach(t => t.stop());
     document.getElementById('perm-cam').className = 'perm-check done';
-  } catch {
-    document.getElementById('perm-cam').className = 'perm-check fail';
-  }
-
+  } catch { document.getElementById('perm-cam').className = 'perm-check fail'; }
   localStorage.setItem(SETUP_KEY, '1');
-  await new Promise(r => setTimeout(r, 600));
+  await new Promise(r => setTimeout(r, 500));
   showApp();
 }
 
@@ -452,61 +328,71 @@ function showApp() {
 
 // ── Init ──────────────────────────────────────
 function init() {
-  // Device ID
-  document.getElementById('device-id-label').textContent =
-    CONFIG.deviceId.slice(0, 8) + '…';
+  document.getElementById('device-id-label').textContent = CONFIG.deviceId.slice(0, 8) + '…';
 
-  // GPS
+  // ── GPS ────────────────────────────────────
   gps = new GPSTracker({
     onUpdate: point => {
       ui.setGPSCount(gps.points.length);
       ui.setLastGPSTime(new Date(point.t));
       ui.setCoords(point);
-      ui.addHistoryItem(point);
-      ui.drawMap('map-canvas',  gps.points);
-      ui.drawMap('map-canvas2', gps.points);
-      document.getElementById('coord-lat').textContent = point.lat.toFixed(6);
-      document.getElementById('coord-lon').textContent = point.lon.toFixed(6);
-      document.getElementById('coord-acc').textContent = Math.round(point.acc);
-      document.getElementById('map-coord2').textContent =
-        `${point.lat.toFixed(4)}, ${point.lon.toFixed(4)}`;
-      document.getElementById('map-overlay2').style.display = 'block';
-      document.getElementById('map-empty2').style.display   = 'none';
+      // Mapa com ou sem rastro (item 2)
+      const pts = showTrail ? gps.points : [point];
+      ui.drawMap('map-canvas', pts);
+      document.getElementById('map-coord').textContent = `${point.lat.toFixed(4)}, ${point.lon.toFixed(4)}`;
+      document.getElementById('map-overlay').style.display = 'block';
+      document.getElementById('map-empty').style.display   = 'none';
+      // Geocodificação reversa (item 3)
+      reverseGeocode(point.lat, point.lon);
     },
     onError: msg => ui.toast(msg, 'error'),
   });
 
-  // Câmera + Microfone
+  // ── Câmera ─────────────────────────────────
   cam = new CameraManager({
     onStart: (stream, mode) => {
       if (mode === 'camera') {
-        ui.attachVideo(stream);
-        ui.setCameraActive(true);
-        document.getElementById('cam-video').style.display = 'block';
-        document.getElementById('btn-cam-start').style.display = 'none';
-        document.getElementById('btn-cam-stop').style.display  = 'flex';
-        document.getElementById('btn-cam-flip').style.display  = 'flex';
+        const video = document.getElementById('cam-video');
+        video.srcObject = stream; video.style.display = 'block';
+        document.getElementById('cam-placeholder').style.display = 'none';
+        document.getElementById('cam-live-badge').style.display  = 'flex';
+        document.getElementById('btn-cam-start').style.display   = 'none';
+        document.getElementById('btn-cam-stop').style.display    = 'flex';
+        document.getElementById('btn-cam-flip').style.display    = 'flex';
+        document.getElementById('btn-rec').style.display         = 'flex';
+        document.getElementById('btn-fullscreen').style.display  = 'flex';
+        document.getElementById('cam-chip').textContent  = 'Ao vivo';
+        document.getElementById('cam-chip').className   = 'chip chip-green';
+        document.getElementById('stat-cam').textContent = 'On';
         initWebRTC(stream);
       } else if (mode === 'mic') {
         document.getElementById('mic-status').style.display = 'flex';
+        document.getElementById('btn-rec').style.display    = 'flex';
         initWebRTC(stream);
       }
     },
-    onStop: (mode) => {
+    onStop: mode => {
       if (mode === 'camera') {
-        ui.detachVideo();
-        ui.setCameraActive(false);
-        document.getElementById('cam-video').style.display     = 'none';
-        document.getElementById('btn-cam-start').style.display = 'flex';
-        document.getElementById('btn-cam-stop').style.display  = 'none';
-        document.getElementById('btn-cam-flip').style.display  = 'none';
+        const video = document.getElementById('cam-video');
+        video.srcObject = null; video.style.display = 'none';
+        document.getElementById('cam-placeholder').style.display = 'flex';
+        document.getElementById('cam-live-badge').style.display  = 'none';
+        document.getElementById('btn-cam-start').style.display   = 'flex';
+        document.getElementById('btn-cam-stop').style.display    = 'none';
+        document.getElementById('btn-cam-flip').style.display    = 'none';
+        document.getElementById('btn-rec').style.display         = 'none';
+        document.getElementById('btn-fullscreen').style.display  = 'none';
+        document.getElementById('cam-chip').textContent = 'Inativa';
+        document.getElementById('cam-chip').className  = 'chip chip-gray';
+        document.getElementById('stat-cam').textContent = 'Off';
+        stopRecording();
       } else if (mode === 'mic') {
         document.getElementById('mic-status').style.display = 'none';
+        document.getElementById('btn-rec').style.display    = 'none';
+        stopRecording();
       }
       if (!cam.isCamActive && !cam.isMicActive) {
-        rtc?.disconnect();
-        rtc = null;
-        setRTCStatus('inactive');
+        rtc?.disconnect(); rtc = null; setRTC('inactive');
       }
     },
     onError: msg => ui.toast(msg, 'error'),
@@ -520,128 +406,195 @@ function init() {
       ui.toast(labels[cmd] ?? `Comando: ${cmd}`, 'info');
     },
   });
-
-  // Inicia listener de comandos remotos imediatamente
   cam.listenForCommands();
 
-  // WebRTC status UI helper
-  function setRTCStatus(state) {
-    const dot   = document.getElementById('rtc-dot');
-    const label = document.getElementById('rtc-label');
-    const map   = {
-      inactive:     ['',            'inativa'],
-      connecting:   ['connecting',  'conectando…'],
-      connected:    ['connected',   'transmitindo'],
-      disconnected: ['',            'desconectado'],
-      failed:       ['failed',      'falhou'],
-    };
-    const [cls, txt] = map[state] ?? ['', state];
-    dot.className   = `webrtc-dot ${cls}`;
-    label.textContent = txt;
+  // ── WebRTC ─────────────────────────────────
+  function setRTC(state) {
+    const m = { inactive:['','inativa'], connecting:['connecting','conectando…'], connected:['connected','transmitindo'], disconnected:['','desconectado'], failed:['failed','falhou'] };
+    const [cls, txt] = m[state] ?? ['', state];
+    document.getElementById('rtc-dot').className    = `rtc-dot ${cls}`;
+    document.getElementById('rtc-label').textContent = txt;
   }
 
   async function initWebRTC(stream) {
     await WebRTCManager.clearSignals();
     rtc = new WebRTCManager('caller', {
-      onStatus: state => setRTCStatus(state),
-      onError:  msg   => ui.toast(msg, 'error'),
+      onStatus: s => setRTC(s),
+      onError:  m => ui.toast(m, 'error'),
     });
-    setRTCStatus('connecting');
+    setRTC('connecting');
     await rtc.connect(stream);
   }
 
-  // ── Eventos de botão ──────────────────────
+  // ── Gravação (item 5) ──────────────────────
+  function startRecording() {
+    const stream = cam.camStream || cam.micStream;
+    if (!stream) return;
+    recChunks = [];
+    recorder  = new MediaRecorder(stream);
+    recorder.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
+    recorder.onstop = () => {
+      const blob = new Blob(recChunks, { type: 'video/webm' });
+      const a = Object.assign(document.createElement('a'), {
+        href: URL.createObjectURL(blob),
+        download: `sentinel-rec-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.webm`,
+      });
+      a.click();
+      ui.toast('Gravação salva', 'success');
+    };
+    recorder.start();
+    document.getElementById('rec-badge').style.display = 'flex';
+    document.getElementById('btn-rec').title = 'Parar gravação';
+    document.getElementById('btn-rec').innerHTML = `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="6" y="6" width="12" height="12" fill="var(--red)" stroke="var(--red)"/>
+      </svg>`;
+    ui.toast('Gravando…', 'info');
+  }
 
-  // GPS — home
-  document.getElementById('btn-gps-start').addEventListener('click', startGPS);
-  document.getElementById('btn-gps-stop').addEventListener('click',  stopGPS);
+  function stopRecording() {
+    if (!recorder || recorder.state === 'inactive') return;
+    recorder.stop();
+    recorder = null;
+    document.getElementById('rec-badge').style.display = 'none';
+    document.getElementById('btn-rec').title = 'Gravar';
+    document.getElementById('btn-rec').innerHTML = `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="8" fill="var(--red)" stroke="var(--red)"/>
+      </svg>`;
+  }
 
-  // GPS — aba GPS
-  document.getElementById('btn-gps-start2').addEventListener('click', startGPS);
-  document.getElementById('btn-gps-stop2').addEventListener('click',  stopGPS);
-  document.getElementById('btn-gps-export').addEventListener('click', () => {
-    if (!gps.exportCSV()) ui.toast('Nenhum ponto para exportar', 'error');
-    else ui.toast('CSV exportado', 'success');
+  document.getElementById('btn-rec').addEventListener('click', () => {
+    if (recorder && recorder.state === 'recording') stopRecording();
+    else startRecording();
   });
 
-  function startGPS() {
-    gps.start();
-    ui.setTrackingActive(true);
-    ui.toast('Rastreamento iniciado', 'success');
-    // Sincroniza ambos os botões
-    document.getElementById('btn-gps-start').style.display  = 'none';
-    document.getElementById('btn-gps-stop').style.display   = 'flex';
-    document.getElementById('btn-gps-start2').style.display = 'none';
-    document.getElementById('btn-gps-stop2').style.display  = 'flex';
-  }
+  // ── Pausar/retomar monitoramento (item 6) ──
+  document.getElementById('btn-monitor-toggle').addEventListener('click', () => {
+    monitoring = !monitoring;
+    const icon  = document.getElementById('monitor-icon');
+    const label = document.getElementById('monitor-label');
+    const pill  = document.getElementById('status-pill');
 
-  function stopGPS() {
-    gps.stop();
-    ui.setTrackingActive(false);
-    ui.toast('Rastreamento pausado', 'info');
-    document.getElementById('btn-gps-start').style.display  = 'flex';
-    document.getElementById('btn-gps-stop').style.display   = 'none';
-    document.getElementById('btn-gps-start2').style.display = 'flex';
-    document.getElementById('btn-gps-stop2').style.display  = 'none';
-  }
+    if (monitoring) {
+      gps.start();
+      cam.listenForCommands();
+      label.textContent = 'Pausar';
+      pill.textContent  = 'Ativo';
+      pill.style.background = '';
+      icon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+      ui.toast('Monitoramento retomado', 'success');
+    } else {
+      gps.stop();
+      cam.stopListening();
+      label.textContent = 'Retomar';
+      pill.textContent  = 'Pausado';
+      pill.style.background = 'rgba(220,38,38,.08)';
+      icon.innerHTML = '<polygon points="5,3 19,12 5,21 5,3"/>';
+      ui.toast('Monitoramento pausado', 'info');
+    }
+  });
 
-  // Câmera
+  // ── Toggle rastro (item 2) ──────────────────
+  document.getElementById('btn-trail-toggle').addEventListener('click', () => {
+    showTrail = !showTrail;
+    document.getElementById('btn-trail-toggle').textContent = showTrail ? 'Com rastro' : 'Só posição';
+    if (gps.points.length) {
+      const pts = showTrail ? gps.points : [gps.lastPoint];
+      ui.drawMap('map-canvas', pts);
+    }
+  });
+
+  // ── Atualizar GPS (item 4) ──────────────────
+  document.getElementById('btn-refresh-gps').addEventListener('click', () => {
+    if (!navigator.geolocation) return;
+    ui.toast('Atualizando posição…', 'info');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude: lat, longitude: lon, accuracy: acc } = pos.coords;
+        const point = { lat, lon, acc, t: Date.now() };
+        gps.points.push(point);
+        ui.setCoords(point);
+        const pts = showTrail ? gps.points : [point];
+        ui.drawMap('map-canvas', pts);
+        reverseGeocode(lat, lon);
+        ui.toast('Posição atualizada', 'success');
+      },
+      () => ui.toast('Erro ao obter posição', 'error'),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+
+  // ── Câmera botões ───────────────────────────
   document.getElementById('btn-cam-start').addEventListener('click', () => cam.startCamera());
   document.getElementById('btn-cam-stop').addEventListener('click',  () => cam.stopCamera());
   document.getElementById('btn-cam-flip').addEventListener('click',  () => cam.flip());
 
-  // Config — câmera traseira toggle
-  document.getElementById('sw-rear').addEventListener('click', function() {
-    this.classList.toggle('on');
-    cam.flip();
+  // Fullscreen (item 1)
+  document.getElementById('btn-fullscreen').addEventListener('click', () => {
+    const wrap = document.getElementById('cam-wrap');
+    if (wrap.requestFullscreen) wrap.requestFullscreen();
+    else if (wrap.webkitRequestFullscreen) wrap.webkitRequestFullscreen();
   });
 
-  // Config — dados
+  // Config
+  document.getElementById('sw-rear').addEventListener('click', function() {
+    this.classList.toggle('on'); cam.flip();
+  });
   document.getElementById('btn-export-cfg').addEventListener('click', () => {
     if (!gps.exportCSV()) ui.toast('Nenhum ponto para exportar', 'error');
     else ui.toast('CSV exportado', 'success');
   });
   document.getElementById('btn-clear').addEventListener('click', () => {
-    gps.clearHistory();
-    ui.clearHistoryUI();
-    ui.setGPSCount(0);
+    gps.clearHistory(); ui.clearHistoryUI(); ui.setGPSCount(0);
     ui.toast('Histórico limpo', 'success');
   });
 
-  // Zoom
-  document.getElementById('zoom-in').addEventListener('click',
-    () => ui.zoomMap('map-canvas',  gps.points, 1.5));
-  document.getElementById('zoom-out').addEventListener('click',
-    () => ui.zoomMap('map-canvas',  gps.points, 0.67));
-  document.getElementById('zoom-in2').addEventListener('click',
-    () => ui.zoomMap('map-canvas2', gps.points, 1.5));
-  document.getElementById('zoom-out2').addEventListener('click',
-    () => ui.zoomMap('map-canvas2', gps.points, 0.67));
-
   // Tabs
-  document.querySelectorAll('.nav-tab').forEach(tab => {
-    tab.addEventListener('click', () => ui.switchTab(tab.dataset.tab));
-  });
+  document.querySelectorAll('.nav-tab').forEach(tab =>
+    tab.addEventListener('click', () => ui.switchTab(tab.dataset.tab)));
 
-  // Resize
   window.addEventListener('resize', () => {
     if (gps.points.length) {
-      ui.drawMap('map-canvas',  gps.points);
-      ui.drawMap('map-canvas2', gps.points);
+      const pts = showTrail ? gps.points : [gps.lastPoint];
+      ui.drawMap('map-canvas', pts);
     }
   });
 
-  // Restaura pontos salvos no histórico
-  gps.points.slice(-50).reverse().forEach(p => ui.addHistoryItem(p));
-  if (gps.points.length) {
-    ui.setGPSCount(gps.points.length);
-    ui.drawMap('map-canvas',  gps.points);
-    ui.drawMap('map-canvas2', gps.points);
-    ui.setCoords(gps.lastPoint);
-  }
-
-  // Inicia GPS automaticamente — não precisa tocar em nada
+  // Inicia GPS automático
   startGPS();
+
+  function startGPS() {
+    gps.start();
+    ui.setTrackingActive(true);
+  }
+}
+
+// ── Geocodificação reversa (item 3) ────────────
+let geocodeTimer = null;
+async function reverseGeocode(lat, lon) {
+  clearTimeout(geocodeTimer);
+  geocodeTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=pt-BR`,
+        { headers: { 'Accept-Language': 'pt-BR' } }
+      );
+      const data = await res.json();
+      const a = data.address ?? {};
+      const parts = [
+        a.road || a.pedestrian || a.footway,
+        a.house_number,
+        a.suburb || a.neighbourhood || a.quarter,
+        a.city || a.town || a.village || a.municipality,
+        a.state,
+      ].filter(Boolean);
+      const addr = parts.length ? parts.join(', ') : data.display_name?.split(',').slice(0,3).join(',') ?? '—';
+      document.getElementById('address-display').textContent = addr;
+    } catch {
+      document.getElementById('address-display').textContent = 'Endereço indisponível';
+    }
+  }, 2000); // throttle: só busca após 2s parado
 }
 </script>
 </body>

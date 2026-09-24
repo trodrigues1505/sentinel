@@ -1,11 +1,11 @@
 {
-  "name": "Sentinel — Monitoramento",
-  "short_name": "Sentinel",
-  "description": "Câmera de segurança e rastreamento GPS",
+  "name": "\u200B",
+  "short_name": "\u200B",
+  "description": "Monitoramento",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0c10",
-  "theme_color": "#0a0c10",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "orientation": "portrait-primary",
   "icons": [
     {

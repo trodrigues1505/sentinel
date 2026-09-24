@@ -282,6 +282,7 @@
           </div>
         </div>
         <div class="cam-controls">
+          <button class="btn btn-ghost" id="btn-rec-admin" style="height:32px;padding:0 12px;font-size:12px">⏺ Gravar</button>
           <button class="btn btn-primary" style="flex:1" id="btn-cam-on">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
@@ -317,6 +318,7 @@
           </div>
           <span style="font-size:12px;color:var(--t3);font-variant-numeric:tabular-nums" id="coord-display">—</span>
         </div>
+        <div style="padding:10px 16px;border-bottom:1px solid var(--b1);background:var(--s2)"><div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Endereço</div><div style="font-size:13px;font-weight:500;color:var(--t1)" id="admin-address">Aguardando posição…</div></div>
         <div class="l-wrap" style="height:280px">
           <div id="map-dash"></div>
         </div>
@@ -687,3 +689,78 @@ await getDeviceId();
 </script>
 </body>
 </html>
+<script type="module">
+// Patch: adiciona endereço, toggle rastro e gravação ao admin já carregado
+// (executado após o módulo principal)
+
+// ── Toggle rastro no admin ────────────────────
+let adminTrail = true;
+document.getElementById('btn-trail-admin')?.addEventListener('click', function() {
+  adminTrail = !adminTrail;
+  this.textContent = adminTrail ? 'Com rastro' : 'Só posição';
+  // pathDash e pathGPS são variáveis do módulo principal — acessa via window se necessário
+});
+
+// ── Geocodificação reversa ────────────────────
+let geoTimer = null;
+function adminGeocode(lat, lon) {
+  clearTimeout(geoTimer);
+  geoTimer = setTimeout(async () => {
+    try {
+      const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, { headers: { 'Accept-Language': 'pt-BR' } });
+      const data = await res.json();
+      const a    = data.address ?? {};
+      const parts = [a.road || a.pedestrian, a.house_number, a.suburb || a.neighbourhood, a.city || a.town || a.village, a.state].filter(Boolean);
+      const addr  = parts.length ? parts.join(', ') : data.display_name?.split(',').slice(0,3).join(',') ?? '—';
+      const el = document.getElementById('admin-address');
+      if (el) el.textContent = addr;
+    } catch { /* silencioso */ }
+  }, 2500);
+}
+
+// Intercepta processPoint para geocodificar
+const origProcessPoint = window._processPoint;
+// Observa mudanças no coord-display para disparar geocode
+const coordEl = document.getElementById('coord-display');
+if (coordEl) {
+  new MutationObserver(() => {
+    const txt = coordEl.textContent;
+    const m   = txt.match(/([-\d.]+),\s*([-\d.]+)/);
+    if (m) adminGeocode(parseFloat(m[1]), parseFloat(m[2]));
+  }).observe(coordEl, { childList: true, characterData: true, subtree: true });
+}
+
+// ── Gravação no admin ─────────────────────────
+let adminRecorder = null, adminChunks = [];
+
+function adminStartRec() {
+  const video = document.getElementById('admin-video');
+  if (!video?.srcObject) { return; }
+  adminChunks = [];
+  adminRecorder = new MediaRecorder(video.srcObject);
+  adminRecorder.ondataavailable = e => { if (e.data.size) adminChunks.push(e.data); };
+  adminRecorder.onstop = () => {
+    const blob = new Blob(adminChunks, { type: 'video/webm' });
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(blob),
+      download: `sentinel-admin-rec-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.webm`,
+    });
+    a.click();
+  };
+  adminRecorder.start();
+  const btn = document.getElementById('btn-rec-admin');
+  if (btn) { btn.textContent = '⏹ Parar gravação'; btn.className = 'btn btn-danger'; }
+}
+
+function adminStopRec() {
+  if (!adminRecorder) return;
+  adminRecorder.stop(); adminRecorder = null;
+  const btn = document.getElementById('btn-rec-admin');
+  if (btn) { btn.textContent = '⏺ Gravar'; btn.className = 'btn btn-ghost'; }
+}
+
+document.getElementById('btn-rec-admin')?.addEventListener('click', () => {
+  if (adminRecorder?.state === 'recording') adminStopRec();
+  else adminStartRec();
+});
+</script>
