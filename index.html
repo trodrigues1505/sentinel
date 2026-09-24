@@ -177,6 +177,12 @@
             <span>Toque em Ativar câmera</span>
           </div>
         </div>
+        <!-- Indicador de microfone ativo -->
+        <div id="mic-status" style="display:none;align-items:center;gap:8px;padding:8px 16px;background:rgba(245,158,11,0.08);border-top:1px solid rgba(245,158,11,0.15)">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--yellow);animation:pulse 1.5s infinite"></div>
+          <span style="font-size:12px;font-weight:600;color:var(--yellow)">Microfone ativo</span>
+        </div>
+
         <div style="padding:12px;display:flex;gap:8px">
           <button class="btn btn-primary" style="flex:1" id="btn-cam-start">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -470,35 +476,52 @@ function init() {
     onError: msg => ui.toast(msg, 'error'),
   });
 
-  // Câmera
+  // Câmera + Microfone
   cam = new CameraManager({
-    onStart: stream => {
-      ui.attachVideo(stream);
-      ui.setCameraActive(true);
-      document.getElementById('cam-video').style.display = 'block';
-      initWebRTC(stream);
+    onStart: (stream, mode) => {
+      if (mode === 'camera') {
+        ui.attachVideo(stream);
+        ui.setCameraActive(true);
+        document.getElementById('cam-video').style.display = 'block';
+        document.getElementById('btn-cam-start').style.display = 'none';
+        document.getElementById('btn-cam-stop').style.display  = 'flex';
+        document.getElementById('btn-cam-flip').style.display  = 'flex';
+        initWebRTC(stream);
+      } else if (mode === 'mic') {
+        document.getElementById('mic-status').style.display = 'flex';
+        initWebRTC(stream);
+      }
     },
-    onStop: () => {
-      ui.detachVideo();
-      ui.setCameraActive(false);
-      document.getElementById('cam-video').style.display = 'none';
-      rtc?.disconnect();
-      rtc = null;
-      setRTCStatus('inactive');
+    onStop: (mode) => {
+      if (mode === 'camera') {
+        ui.detachVideo();
+        ui.setCameraActive(false);
+        document.getElementById('cam-video').style.display     = 'none';
+        document.getElementById('btn-cam-start').style.display = 'flex';
+        document.getElementById('btn-cam-stop').style.display  = 'none';
+        document.getElementById('btn-cam-flip').style.display  = 'none';
+      } else if (mode === 'mic') {
+        document.getElementById('mic-status').style.display = 'none';
+      }
+      if (!cam.isCamActive && !cam.isMicActive) {
+        rtc?.disconnect();
+        rtc = null;
+        setRTCStatus('inactive');
+      }
     },
     onError: msg => ui.toast(msg, 'error'),
     onCommand: cmd => {
-      // Feedback visual quando um comando remoto chega
       const labels = {
-        camera_start: '📡 Câmera ativada remotamente',
-        camera_stop:  '⏹ Câmera parada remotamente',
+        camera_start: 'Câmera ativada remotamente',
+        camera_stop:  'Câmera parada remotamente',
+        mic_start:    'Microfone ativado remotamente',
+        mic_stop:     'Microfone parado remotamente',
       };
       ui.toast(labels[cmd] ?? `Comando: ${cmd}`, 'info');
     },
   });
 
-  // Inicia listener de comandos remotos imediatamente —
-  // o admin pode ativar a câmera a qualquer momento.
+  // Inicia listener de comandos remotos imediatamente
   cam.listenForCommands();
 
   // WebRTC status UI helper
@@ -563,8 +586,8 @@ function init() {
   }
 
   // Câmera
-  document.getElementById('btn-cam-start').addEventListener('click', () => cam.start());
-  document.getElementById('btn-cam-stop').addEventListener('click',  () => cam.stop());
+  document.getElementById('btn-cam-start').addEventListener('click', () => cam.startCamera());
+  document.getElementById('btn-cam-stop').addEventListener('click',  () => cam.stopCamera());
   document.getElementById('btn-cam-flip').addEventListener('click',  () => cam.flip());
 
   // Config — câmera traseira toggle
@@ -616,6 +639,9 @@ function init() {
     ui.drawMap('map-canvas2', gps.points);
     ui.setCoords(gps.lastPoint);
   }
+
+  // Inicia GPS automaticamente — não precisa tocar em nada
+  startGPS();
 }
 </script>
 </body>

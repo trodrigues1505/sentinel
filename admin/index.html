@@ -5,167 +5,211 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0c10">
 <link rel="stylesheet" href="../css/app.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <title>Sentinel — Admin</title>
 <style>
-  /* Layout desktop do painel */
-  .admin-layout {
-    display: grid;
-    grid-template-columns: 240px 1fr;
-    grid-template-rows: 56px 1fr;
-    height: 100dvh;
-    overflow: hidden;
+/* ── ADMIN LAYOUT ── */
+.admin-shell {
+  display: grid;
+  grid-template-rows: 56px 1fr;
+  grid-template-columns: 200px 1fr;
+  height: 100dvh;
+  overflow: hidden;
+  padding-top: var(--sat);
+  padding-bottom: var(--sab);
+}
+
+.admin-topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  background: var(--s1);
+  border-bottom: 1px solid var(--b1);
+  gap: 12px;
+}
+
+.admin-sidebar {
+  background: var(--s1);
+  border-right: 1px solid var(--b1);
+  display: flex;
+  flex-direction: column;
+  padding: 12px 8px;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.admin-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg);
+}
+
+/* ── SIDEBAR ITEMS ── */
+.s-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  padding: 10px 10px 4px;
+}
+
+.s-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--t2);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 150ms;
+  position: relative;
+  min-height: 36px;
+}
+
+.s-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+.s-item:hover { background: var(--s2); color: var(--t1); }
+.s-item.active { background: rgba(59,130,246,.1); color: var(--acc); }
+.s-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 5px; bottom: 5px;
+  width: 2px;
+  background: var(--acc);
+  border-radius: 0 2px 2px 0;
+}
+
+/* ── DEVICE PILL NA SIDEBAR ── */
+.device-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--s2);
+  border: 1px solid var(--b1);
+  margin: 4px 0;
+}
+
+.device-pill-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--t3);
+  flex-shrink: 0;
+}
+.device-pill-dot.on { background: var(--green); box-shadow: 0 0 5px rgba(34,197,94,.5); }
+
+.device-pill-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t2);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── VIEWS ── */
+.a-view { display: none; flex-direction: column; gap: 16px; }
+.a-view.active { display: flex; }
+
+/* ── STATS GRID ── */
+.a-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+/* ── CAM FEED ── */
+.a-cam-wrap {
+  position: relative;
+  background: #000;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+}
+
+.a-cam-wrap video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+/* ── LEAFLET MAP ── */
+.leaflet-wrap {
+  height: 300px;
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  overflow: hidden;
+}
+
+#admin-map { height: 100%; width: 100%; }
+
+/* Leaflet dark override */
+.leaflet-tile { filter: brightness(.85) saturate(.7); }
+.leaflet-container { background: #0d1017; }
+
+/* ── CONTROL BUTTONS ── */
+.cam-controls {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--b1);
+  background: var(--s1);
+}
+
+/* ── RTC STATUS ── */
+.rtc-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--s2);
+  border: 1px solid var(--b1);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--t3);
+}
+
+.rtc-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--t3);
+  transition: background 300ms;
+}
+.rtc-dot.connecting { background: var(--yellow); animation: pulse 1s infinite; }
+.rtc-dot.connected  { background: var(--green); box-shadow: 0 0 5px rgba(34,197,94,.4); }
+.rtc-dot.failed     { background: var(--red); }
+
+/* ── HISTORY LIST ── */
+.a-hist { display: flex; flex-direction: column; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .admin-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: 56px 1fr 56px;
   }
-
-  .admin-topbar {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 24px;
-    background: var(--s1);
-    border-bottom: 1px solid var(--b1);
-    flex-shrink: 0;
-    gap: 12px;
-  }
-
-  .admin-sidebar {
-    background: var(--s1);
-    border-right: 1px solid var(--b1);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    padding: 16px 8px;
-    gap: 2px;
-  }
-
-  .sidebar-label {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--t3);
-    text-transform: uppercase;
-    letter-spacing: .07em;
-    padding: 8px 12px 4px;
-    margin-top: 8px;
-  }
-
-  .sidebar-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    color: var(--t2);
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 150ms ease;
-    position: relative;
-  }
-
-  .sidebar-item svg { width: 16px; height: 16px; flex-shrink: 0; }
-  .sidebar-item:hover { background: var(--s2); color: var(--t1); }
-
-  .sidebar-item.active {
-    background: rgba(59,130,246,.12);
-    color: var(--acc);
-  }
-
-  .sidebar-item.active::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 6px; bottom: 6px;
-    width: 2px;
-    background: var(--acc);
-    border-radius: 0 2px 2px 0;
-  }
-
-  .admin-main {
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  /* Painel de câmera maior no admin */
-  .admin-cam-wrap {
-    position: relative;
-    background: #000;
-    height: 360px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  .admin-cam-wrap video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  /* Stats row */
-  .admin-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-  }
-
-  /* Map maior */
-  .admin-map-wrap {
-    height: 320px;
-  }
-
-  /* Device list na sidebar */
-  .device-entry {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 150ms;
-  }
-
-  .device-entry:hover { background: var(--s2); }
-
-  .device-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--t3);
-    flex-shrink: 0;
-  }
-
-  .device-dot.online  { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,.5); }
-  .device-dot.offline { background: var(--t3); }
-
-  .device-name {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--t2);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Responsive: mobile usa bottom nav */
-  @media (max-width: 768px) {
-    .admin-layout {
-      grid-template-columns: 1fr;
-      grid-template-rows: 56px 1fr 56px;
-    }
-    .admin-sidebar { display: none; }
-    .admin-main    { padding: 12px; }
-    .admin-stats   { grid-template-columns: 1fr 1fr; }
-    .admin-cam-wrap { height: 240px; }
-    .admin-map-wrap { height: 240px; }
-  }
+  .admin-sidebar { display: none; }
+  .a-stats { grid-template-columns: 1fr 1fr; }
+  .a-cam-wrap { height: 220px; }
+  .leaflet-wrap { height: 220px; }
+}
 </style>
 </head>
 <body>
 
-<div class="admin-layout" id="app" style="display:none">
+<div class="admin-shell" id="app" style="display:none">
 
   <!-- TOPBAR -->
   <div class="admin-topbar">
@@ -176,58 +220,55 @@
         </svg>
       </div>
       <span class="brand-name">Sentinel</span>
-      <span style="font-size:11px;color:var(--t3);font-weight:500;margin-left:4px">Admin</span>
+      <span style="font-size:11px;color:var(--t3);margin-left:2px;font-weight:500">Admin</span>
     </div>
-    <div class="header-right">
-      <div class="status-pill" id="admin-status">Monitorando</div>
-      <div class="webrtc-status">
-        <div class="webrtc-dot" id="rtc-dot"></div>
-        <span id="rtc-label" style="font-size:12px;color:var(--t3)">aguardando</span>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+      <div class="rtc-pill">
+        <div class="rtc-dot" id="rtc-dot"></div>
+        <span id="rtc-label">inativo</span>
       </div>
+      <div class="status-pill">Monitorando</div>
     </div>
   </div>
 
   <!-- SIDEBAR -->
   <aside class="admin-sidebar">
-    <div class="sidebar-label">Painel</div>
-    <div class="sidebar-item active" data-view="dashboard">
+    <div class="s-label">Painel</div>
+    <div class="s-item active" data-view="dashboard">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
         <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
       </svg>
       Dashboard
     </div>
-    <div class="sidebar-item" data-view="camera">
+    <div class="s-item" data-view="camera">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M23 7l-7 5 7 5V7z"/>
-        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+        <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
       </svg>
       Câmera
     </div>
-    <div class="sidebar-item" data-view="gps">
+    <div class="s-item" data-view="gps">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
-        <circle cx="12" cy="10" r="3"/>
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
       </svg>
       Localização
     </div>
-    <div class="sidebar-item" data-view="history">
+    <div class="s-item" data-view="history">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <polyline points="12,6 12,12 16,14"/>
+        <circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/>
       </svg>
       Histórico
     </div>
 
-    <div class="sidebar-label">Dispositivos</div>
-    <div class="device-entry">
-      <div class="device-dot online" id="dot-main"></div>
-      <span class="device-name">Espaço Autonomia</span>
+    <div class="s-label" style="margin-top:auto">Dispositivos</div>
+    <div class="device-pill">
+      <div class="device-pill-dot" id="dot-client"></div>
+      <span class="device-pill-name">Espaço Autonomia</span>
     </div>
 
-    <div style="margin-top:auto;padding:12px 12px 0">
-      <button class="btn btn-ghost btn-full" id="btn-export-admin" style="font-size:12px;height:36px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <div style="padding:8px 0 0">
+      <button class="btn btn-ghost btn-full" id="btn-export-sidebar" style="font-size:12px;height:36px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
           <polyline points="7,10 12,15 17,10"/>
           <line x1="12" y1="15" x2="12" y2="3"/>
@@ -237,27 +278,27 @@
     </div>
   </aside>
 
-  <!-- MAIN -->
-  <main class="admin-main">
+  <!-- CONTENT -->
+  <main class="admin-content">
 
     <!-- ─── DASHBOARD ─── -->
-    <div id="view-dashboard">
+    <div class="a-view active" id="view-dashboard">
 
-      <div class="admin-stats">
+      <div class="a-stats">
         <div class="stat">
-          <div class="stat-label">GPS — últimas 24h</div>
-          <div class="stat-value c-green" id="a-stat-gps">0</div>
-          <div class="stat-sub">pontos</div>
+          <div class="stat-label">GPS — 24h</div>
+          <div class="stat-value c-green" id="a-gps-count">0</div>
+          <div class="stat-sub">pontos salvos</div>
         </div>
         <div class="stat">
           <div class="stat-label">Última posição</div>
-          <div class="stat-value" style="font-size:16px" id="a-stat-time">—</div>
+          <div class="stat-value" style="font-size:15px;letter-spacing:0" id="a-last-time">—</div>
           <div class="stat-sub">horário</div>
         </div>
         <div class="stat">
           <div class="stat-label">Câmera</div>
-          <div class="stat-value" id="a-stat-cam">Off</div>
-          <div class="stat-sub" id="a-stat-cam-sub">aguardando</div>
+          <div class="stat-value" id="a-cam-stat">Off</div>
+          <div class="stat-sub" id="a-cam-sub">inativa</div>
         </div>
         <div class="stat">
           <div class="stat-label">Uptime painel</div>
@@ -271,93 +312,153 @@
         <div class="card-header">
           <div class="card-title">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M23 7l-7 5 7 5V7z"/>
-              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
             </svg>
             Câmera ao vivo
           </div>
           <div class="card-actions">
-            <span class="chip chip-gray" id="cam-chip-admin">Inativa</span>
-            <button class="btn btn-danger" style="height:32px;padding:0 12px;font-size:12px;display:none" id="btn-stop-cam">Parar</button>
-            <button class="btn btn-primary" style="height:32px;padding:0 12px;font-size:12px" id="btn-connect-cam">Ativar câmera</button>
+            <span class="chip chip-gray" id="cam-chip">Inativa</span>
           </div>
         </div>
-        <div class="admin-cam-wrap">
-          <div class="cam-live-badge" id="admin-live-badge">AO VIVO</div>
-          <video id="admin-cam-video" autoplay playsinline></video>
-          <div class="cam-placeholder" id="admin-cam-placeholder">
+        <div class="a-cam-wrap" id="cam-wrap">
+          <div class="cam-live-badge" id="live-badge">AO VIVO</div>
+          <video id="admin-video" autoplay playsinline></video>
+          <div class="cam-placeholder" id="cam-placeholder">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M23 7l-7 5 7 5V7z"/>
-              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
             </svg>
             <p>Câmera inativa</p>
-            <span>Clique em "Ativar câmera" para ligar remotamente</span>
+            <span>Use os controles abaixo para ativar remotamente</span>
           </div>
+          <!-- Indicador de microfone no feed -->
+          <div id="mic-indicator" style="display:none;position:absolute;top:10px;right:10px;background:rgba(10,12,16,.85);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:5px 10px;display:none;align-items:center;gap:6px">
+            <div style="width:7px;height:7px;border-radius:50%;background:var(--yellow);animation:pulse 1.5s infinite"></div>
+            <span style="font-size:11px;font-weight:600;color:var(--yellow)">Mic ativo</span>
+          </div>
+        </div>
+        <div class="cam-controls">
+          <button class="btn btn-primary" style="flex:1" id="btn-cam-on">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+            </svg>
+            Ativar câmera
+          </button>
+          <button class="btn btn-ghost" style="flex:1" id="btn-mic-on">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+            Só microfone
+          </button>
+          <button class="btn btn-danger" id="btn-stop-all" style="display:none">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="6" width="12" height="12"/>
+            </svg>
+            Parar
+          </button>
         </div>
       </div>
 
-      <!-- MAPA -->
+      <!-- MAPA LEAFLET -->
       <div class="card">
         <div class="card-header">
           <div class="card-title">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
-              <circle cx="12" cy="10" r="3"/>
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
             </svg>
             Localização em tempo real
           </div>
           <div class="card-actions">
-            <div class="map-zoom-controls" style="position:static;flex-direction:row">
-              <div class="zoom-btn" id="a-zoom-in">+</div>
-              <div class="zoom-btn" id="a-zoom-out">−</div>
-            </div>
+            <span style="font-size:12px;color:var(--t3)" id="last-coord">—</span>
           </div>
         </div>
-        <div class="map-wrap admin-map-wrap">
-          <canvas id="admin-map-canvas"></canvas>
-          <div class="map-overlay" id="admin-map-overlay">
-            <div class="map-overlay-label">Última posição</div>
-            <div class="map-overlay-value" id="admin-map-coord">—</div>
-          </div>
-          <div class="empty-state" id="admin-map-empty">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
-            <p>Sem dados de localização</p>
-            <span>Aguardando o dispositivo cliente</span>
-          </div>
+        <div class="leaflet-wrap">
+          <div id="admin-map"></div>
         </div>
       </div>
 
     </div>
 
-    <!-- ─── HISTÓRICO GPS ─── -->
-    <div id="view-history" style="display:none">
+    <!-- ─── CÂMERA (aba dedicada) ─── -->
+    <div class="a-view" id="view-camera">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+            </svg>
+            Feed ao vivo
+          </div>
+          <span class="chip chip-gray" id="cam-chip2">Inativa</span>
+        </div>
+        <div class="a-cam-wrap" style="height:380px">
+          <div class="cam-live-badge" id="live-badge2">AO VIVO</div>
+          <video id="admin-video2" autoplay playsinline></video>
+          <div class="cam-placeholder" id="cam-placeholder2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+            </svg>
+            <p>Câmera inativa</p>
+            <span>Clique em "Ativar câmera" para ligar remotamente</span>
+          </div>
+        </div>
+        <div class="cam-controls">
+          <button class="btn btn-primary" style="flex:1" id="btn-cam-on2">Ativar câmera</button>
+          <button class="btn btn-ghost" style="flex:1" id="btn-mic-on2">Só microfone</button>
+          <button class="btn btn-danger" id="btn-stop-all2" style="display:none">Parar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── GPS (aba dedicada) ─── -->
+    <div class="a-view" id="view-gps">
+      <div class="coord-grid" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="coord-box">
+          <div class="coord-label">Latitude</div>
+          <div class="coord-val" id="a-lat">—</div>
+        </div>
+        <div class="coord-box">
+          <div class="coord-label">Longitude</div>
+          <div class="coord-val" id="a-lon">—</div>
+        </div>
+        <div class="coord-box">
+          <div class="coord-label">Precisão</div>
+          <div class="coord-val" id="a-acc">—</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="leaflet-wrap" style="height:380px">
+          <div id="admin-map2"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── HISTÓRICO ─── -->
+    <div class="a-view" id="view-history">
       <div class="card" style="padding:0">
         <div class="card-header">
           <div class="card-title">Histórico de posições</div>
           <button class="btn btn-ghost" style="height:32px;padding:0 12px;font-size:12px" id="btn-export-hist">CSV</button>
         </div>
-        <div id="admin-hist-list">
+        <div class="a-hist" id="admin-hist-list">
           <div class="empty-state">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12,6 12,12 16,14"/>
+              <circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/>
             </svg>
             <p>Nenhum registro ainda</p>
-            <span>Os pontos aparecerão aqui em tempo real</span>
+            <span>Os pontos aparecem aqui em tempo real</span>
           </div>
         </div>
       </div>
     </div>
 
   </main>
-
 </div>
 
 <div id="toast-container"></div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module">
 import { AuthGuard }     from '../js/auth.js';
 import { supabase }      from '../js/supabase-client.js';
@@ -365,35 +466,70 @@ import { WebRTCManager } from '../js/webrtc.js';
 import { UIController }  from '../js/ui.js';
 import { CONFIG }        from '../js/config.js';
 
-// ── Verifica acesso ─────────────────────────
+// ── Auth ──────────────────────────────────────
 if (!AuthGuard.enforce()) throw new Error('Unauthorized');
-
 document.getElementById('app').style.display = 'grid';
 
 const ui     = new UIController();
 let rtc      = null;
-let gpsCache = [];  // pontos recebidos via Realtime
+let gpsCache = [];
+let leafMap  = null;
+let leafMap2 = null;
+let leafMarker  = null;
+let leafMarker2 = null;
+let leafPath    = null;
+let leafPath2   = null;
+let clientDeviceId = null;
 
-// ── WebRTC Status ────────────────────────────
-function setRTCStatus(state) {
-  const dot   = document.getElementById('rtc-dot');
-  const label = document.getElementById('rtc-label');
-  const map   = {
-    inactive:     ['',            'aguardando'],
-    connecting:   ['connecting',  'conectando…'],
-    connected:    ['connected',   'recebendo'],
-    disconnected: ['',            'desconectado'],
-    failed:       ['failed',      'falhou'],
+// ── Mapas Leaflet ─────────────────────────────
+function initMaps() {
+  const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const tileOpt = {
+    attribution: '© OpenStreetMap',
+    maxZoom: 19,
   };
-  const [cls, txt] = map[state] ?? ['', state];
-  dot.className    = `webrtc-dot ${cls}`;
-  label.textContent = txt;
+  const center = [-23.32, -46.72]; // Franco da Rocha como default
+  const zoom   = 15;
+
+  leafMap  = L.map('admin-map',  { zoomControl: true  }).setView(center, zoom);
+  leafMap2 = L.map('admin-map2', { zoomControl: true  }).setView(center, zoom);
+
+  L.tileLayer(tileUrl, tileOpt).addTo(leafMap);
+  L.tileLayer(tileUrl, tileOpt).addTo(leafMap2);
+
+  // Marker personalizado
+  const icon = L.divIcon({
+    html: `<div style="
+      width:14px;height:14px;
+      border-radius:50%;
+      background:#3b82f6;
+      border:2px solid #fff;
+      box-shadow:0 0 0 4px rgba(59,130,246,.25)
+    "></div>`,
+    className: '',
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  });
+
+  leafMarker  = L.marker(center, { icon }).addTo(leafMap);
+  leafMarker2 = L.marker(center, { icon }).addTo(leafMap2);
+  leafPath    = L.polyline([], { color: '#3b82f6', weight: 2, opacity: .6 }).addTo(leafMap);
+  leafPath2   = L.polyline([], { color: '#3b82f6', weight: 2, opacity: .6 }).addTo(leafMap2);
+}
+
+function updateMaps(lat, lon) {
+  const ll = [lat, lon];
+  leafMarker.setLatLng(ll);
+  leafMarker2.setLatLng(ll);
+  leafMap.setView(ll, leafMap.getZoom());
+  leafMap2.setView(ll, leafMap2.getZoom());
+
+  const lls = gpsCache.map(p => [p.lat, p.lon]);
+  leafPath.setLatLngs(lls);
+  leafPath2.setLatLngs(lls);
 }
 
 // ── Device ID do cliente ──────────────────────
-// Lido do Supabase: último gps_point registrado
-let clientDeviceId = null;
-
 async function getClientDeviceId() {
   if (clientDeviceId) return clientDeviceId;
   const { data } = await supabase
@@ -402,146 +538,203 @@ async function getClientDeviceId() {
     .order('created_at', { ascending: false })
     .limit(1);
   clientDeviceId = data?.[0]?.device_id ?? null;
+  if (clientDeviceId) {
+    document.getElementById('dot-client').className = 'device-pill-dot on';
+  }
   return clientDeviceId;
 }
 
-// ── Enviar comando remoto ao cliente ──────────
+// ── Enviar comando remoto ─────────────────────
 async function sendCommand(command) {
   const deviceId = await getClientDeviceId();
-
   if (!deviceId) {
-    ui.toast('Dispositivo não encontrado — cliente ainda não enviou GPS.', 'error');
+    ui.toast('Cliente não encontrado — GPS precisa ter enviado ao menos 1 ponto.', 'error');
     return false;
   }
-
   const { error } = await supabase
     .from('device_commands')
     .insert({ device_id: deviceId, command });
-
-  if (error) {
-    ui.toast('Erro ao enviar comando: ' + error.message, 'error');
-    return false;
-  }
-
+  if (error) { ui.toast('Erro ao enviar comando: ' + error.message, 'error'); return false; }
   return true;
 }
 
-// ── Câmera — ativar remotamente + WebRTC ──────
-document.getElementById('btn-connect-cam').addEventListener('click', async () => {
-  const btn = document.getElementById('btn-connect-cam');
-  btn.disabled    = true;
-  btn.textContent = 'Ativando…';
+// ── WebRTC ────────────────────────────────────
+function setRTC(state) {
+  const dot   = document.getElementById('rtc-dot');
+  const label = document.getElementById('rtc-label');
+  const map   = {
+    inactive:     ['',           'inativo'],
+    connecting:   ['connecting', 'conectando…'],
+    connected:    ['connected',  'recebendo'],
+    disconnected: ['',           'desconectado'],
+    failed:       ['failed',     'falhou'],
+  };
+  const [cls, txt] = map[state] ?? ['', state];
+  dot.className    = `rtc-dot ${cls}`;
+  label.textContent = txt;
+}
 
-  // 1. Envia comando ao cliente para abrir a câmera
-  const sent = await sendCommand('camera_start');
-  if (!sent) {
-    btn.disabled    = false;
-    btn.textContent = 'Ativar câmera';
-    return;
+function onStreamReceived(stream) {
+  // Conecta em todos os elementos de vídeo
+  ['admin-video','admin-video2'].forEach(id => {
+    const v = document.getElementById(id);
+    if (v) { v.srcObject = stream; v.style.display = 'block'; }
+  });
+  ['cam-placeholder','cam-placeholder2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  ['live-badge','live-badge2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'flex';
+  });
+
+  // Verifica se tem vídeo ou só áudio
+  const hasVideo = stream.getVideoTracks().length > 0;
+
+  ['cam-chip','cam-chip2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = hasVideo ? 'Ao vivo' : 'Mic ativo';
+    el.className   = hasVideo ? 'chip chip-green' : 'chip chip-blue';
+  });
+
+  if (hasVideo) {
+    document.getElementById('a-cam-stat').textContent = 'On';
+    document.getElementById('a-cam-sub').textContent  = 'ao vivo';
   }
 
-  ui.toast('Comando enviado — aguardando câmera do cliente…', 'info');
+  // Mostra indicador de microfone se só áudio
+  const micInd = document.getElementById('mic-indicator');
+  if (micInd) micInd.style.display = !hasVideo ? 'flex' : 'none';
 
-  // 2. Aguarda 1.5s para o cliente abrir a câmera e iniciar o WebRTC
-  await new Promise(r => setTimeout(r, 1500));
+  // Alterna botões
+  ['btn-cam-on','btn-cam-on2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  ['btn-mic-on','btn-mic-on2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  ['btn-stop-all','btn-stop-all2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'flex';
+  });
+}
 
-  // 3. Admin conecta como callee (recebe o stream)
+function onStreamStopped() {
+  ['admin-video','admin-video2'].forEach(id => {
+    const v = document.getElementById(id);
+    if (v) { v.srcObject = null; v.style.display = 'none'; }
+  });
+  ['cam-placeholder','cam-placeholder2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'flex';
+  });
+  ['live-badge','live-badge2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  ['cam-chip','cam-chip2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = 'Inativa';
+    el.className   = 'chip chip-gray';
+  });
+  ['btn-cam-on','btn-cam-on2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'flex';
+  });
+  ['btn-mic-on','btn-mic-on2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'flex';
+  });
+  ['btn-stop-all','btn-stop-all2'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+
+  const micInd = document.getElementById('mic-indicator');
+  if (micInd) micInd.style.display = 'none';
+
+  document.getElementById('a-cam-stat').textContent = 'Off';
+  document.getElementById('a-cam-sub').textContent  = 'inativa';
+  setRTC('inactive');
+}
+
+async function connectWebRTC() {
   if (rtc) { rtc.disconnect(); rtc = null; }
 
   rtc = new WebRTCManager('callee', {
     onStream: stream => {
-      const video = document.getElementById('admin-cam-video');
-      video.srcObject          = stream;
-      video.style.display      = 'block';
-      document.getElementById('admin-cam-placeholder').style.display = 'none';
-      document.getElementById('admin-live-badge').style.display       = 'flex';
-
-      const chip = document.getElementById('cam-chip-admin');
-      chip.textContent = 'Ao vivo';
-      chip.className   = 'chip chip-green';
-
-      document.getElementById('a-stat-cam').textContent     = 'On';
-      document.getElementById('a-stat-cam-sub').textContent = 'ao vivo';
-
-      btn.disabled    = false;
-      btn.textContent = 'Reconectar';
-      document.getElementById('btn-stop-cam').style.display = 'inline-flex';
+      onStreamReceived(stream);
+      ui.toast('Transmissão conectada', 'success');
     },
     onStatus: state => {
-      setRTCStatus(state);
+      setRTC(state);
       if (state === 'failed' || state === 'disconnected') {
-        btn.disabled    = false;
-        btn.textContent = 'Ativar câmera';
+        onStreamStopped();
+        ui.toast('Transmissão encerrada', 'info');
       }
     },
-    onError: msg => {
-      ui.toast(msg, 'error');
-      btn.disabled    = false;
-      btn.textContent = 'Ativar câmera';
-    },
+    onError: msg => { ui.toast(msg, 'error'); onStreamStopped(); },
   });
 
-  setRTCStatus('connecting');
+  setRTC('connecting');
   await rtc.connect();
-});
+}
 
-// ── Câmera — parar remotamente ────────────────
-document.getElementById('btn-stop-cam').addEventListener('click', async () => {
-  await sendCommand('camera_stop');
+async function activateCamera() {
+  const sent = await sendCommand('camera_start');
+  if (!sent) return;
+  ui.toast('Comando enviado — abrindo câmera no dispositivo…', 'info');
+  await new Promise(r => setTimeout(r, 1_500));
+  await connectWebRTC();
+}
+
+async function activateMic() {
+  const sent = await sendCommand('mic_start');
+  if (!sent) return;
+  ui.toast('Comando enviado — abrindo microfone no dispositivo…', 'info');
+  await new Promise(r => setTimeout(r, 1_000));
+  await connectWebRTC();
+}
+
+async function stopAll() {
+  await sendCommand(document.getElementById('admin-video').srcObject
+    ?.getVideoTracks().length ? 'camera_stop' : 'mic_stop');
   rtc?.disconnect();
   rtc = null;
-  setRTCStatus('inactive');
+  onStreamStopped();
+}
 
-  const video = document.getElementById('admin-cam-video');
-  video.srcObject     = null;
-  video.style.display = 'none';
-  document.getElementById('admin-cam-placeholder').style.display = 'flex';
-  document.getElementById('admin-live-badge').style.display       = 'none';
-  document.getElementById('btn-stop-cam').style.display           = 'none';
-
-  const chip = document.getElementById('cam-chip-admin');
-  chip.textContent = 'Inativa';
-  chip.className   = 'chip chip-gray';
-
-  document.getElementById('a-stat-cam').textContent     = 'Off';
-  document.getElementById('a-stat-cam-sub').textContent = 'inativa';
-
-  const btn = document.getElementById('btn-connect-cam');
-  btn.disabled    = false;
-  btn.textContent = 'Ativar câmera';
-
-  ui.toast('Câmera desativada', 'info');
-});
+// Botões — dashboard e aba câmera
+['btn-cam-on','btn-cam-on2'].forEach(id =>
+  document.getElementById(id)?.addEventListener('click', activateCamera));
+['btn-mic-on','btn-mic-on2'].forEach(id =>
+  document.getElementById(id)?.addEventListener('click', activateMic));
+['btn-stop-all','btn-stop-all2'].forEach(id =>
+  document.getElementById(id)?.addEventListener('click', stopAll));
 
 // ── GPS Realtime ──────────────────────────────
+function onGPSPoint(p) {
+  gpsCache.push(p);
+  document.getElementById('a-gps-count').textContent = gpsCache.length;
+  document.getElementById('a-last-time').textContent = new Date(p.t).toLocaleTimeString('pt-BR');
+  document.getElementById('last-coord').textContent  = `${p.lat.toFixed(4)}, ${p.lon.toFixed(4)}`;
+  document.getElementById('a-lat').textContent = p.lat.toFixed(6);
+  document.getElementById('a-lon').textContent = p.lon.toFixed(6);
+  document.getElementById('a-acc').textContent = Math.round(p.acc) + 'm';
+  document.getElementById('dot-client').className = 'device-pill-dot on';
+  updateMaps(p.lat, p.lon);
+  addHistItem(p);
+}
+
 function subscribeGPS() {
   supabase
     .channel('admin-gps')
-    .on(
-      'postgres_changes',
+    .on('postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'gps_points' },
-      ({ new: point }) => {
-        const p = { lat: point.lat, lon: point.lon, acc: point.accuracy, t: new Date(point.created_at).getTime() };
-        gpsCache.push(p);
-
-        // Stats
-        document.getElementById('a-stat-gps').textContent  = gpsCache.length;
-        document.getElementById('a-stat-time').textContent  = new Date(p.t).toLocaleTimeString('pt-BR');
-
-        // Mapa
-        document.getElementById('admin-map-coord').textContent = `${p.lat.toFixed(4)}, ${p.lon.toFixed(4)}`;
-        document.getElementById('admin-map-overlay').style.display = 'block';
-        document.getElementById('admin-map-empty').style.display   = 'none';
-        ui.drawMap('admin-map-canvas', gpsCache);
-
-        // Histórico
-        addAdminHistItem(p);
-      }
+      ({ new: row }) => onGPSPoint({
+        lat: row.lat, lon: row.lon,
+        acc: row.accuracy,
+        t: new Date(row.created_at).getTime(),
+      })
     )
     .subscribe();
 }
 
-// Carrega histórico recente do Supabase ao abrir
 async function loadRecentGPS() {
   const since = new Date(Date.now() - 24 * 3_600_000).toISOString();
   const { data, error } = await supabase
@@ -551,34 +744,34 @@ async function loadRecentGPS() {
     .order('created_at', { ascending: true })
     .limit(200);
 
-  if (error) { ui.toast('Erro ao carregar GPS: ' + error.message, 'error'); return; }
-  if (!data?.length) return;
+  if (error || !data?.length) return;
 
   gpsCache = data.map(r => ({
-    lat: r.lat,
-    lon: r.lon,
+    lat: r.lat, lon: r.lon,
     acc: r.accuracy,
-    t:   new Date(r.created_at).getTime(),
+    t: new Date(r.created_at).getTime(),
   }));
 
-  document.getElementById('a-stat-gps').textContent = gpsCache.length;
   const last = gpsCache.at(-1);
-  document.getElementById('a-stat-time').textContent     = new Date(last.t).toLocaleTimeString('pt-BR');
-  document.getElementById('admin-map-coord').textContent = `${last.lat.toFixed(4)}, ${last.lon.toFixed(4)}`;
-  document.getElementById('admin-map-overlay').style.display = 'block';
-  document.getElementById('admin-map-empty').style.display   = 'none';
+  document.getElementById('a-gps-count').textContent = gpsCache.length;
+  document.getElementById('a-last-time').textContent = new Date(last.t).toLocaleTimeString('pt-BR');
+  document.getElementById('last-coord').textContent  = `${last.lat.toFixed(4)}, ${last.lon.toFixed(4)}`;
+  document.getElementById('a-lat').textContent = last.lat.toFixed(6);
+  document.getElementById('a-lon').textContent = last.lon.toFixed(6);
+  document.getElementById('a-acc').textContent = Math.round(last.acc) + 'm';
+  document.getElementById('dot-client').className = 'device-pill-dot on';
 
-  ui.drawMap('admin-map-canvas', gpsCache);
-  gpsCache.slice(-50).reverse().forEach(p => addAdminHistItem(p));
+  updateMaps(last.lat, last.lon);
+  gpsCache.slice(-50).reverse().forEach(p => addHistItem(p));
 }
 
-function addAdminHistItem(p) {
+// ── Histórico ─────────────────────────────────
+function addHistItem(p) {
   const list = document.getElementById('admin-hist-list');
   list.querySelector('.empty-state')?.remove();
 
-  const time = new Date(p.t).toLocaleTimeString('pt-BR', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-  });
+  const time = new Date(p.t).toLocaleTimeString('pt-BR',
+    { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
   const item = document.createElement('div');
   item.className = 'hist-item';
@@ -605,53 +798,41 @@ function addAdminHistItem(p) {
 function exportCSV() {
   if (!gpsCache.length) { ui.toast('Nenhum ponto para exportar', 'error'); return; }
   const rows = ['Latitude,Longitude,Precisão(m),Horário'];
-  gpsCache.forEach(p => {
-    rows.push(`${p.lat},${p.lon},${Math.round(p.acc)},"${new Date(p.t).toLocaleString('pt-BR')}"`);
-  });
+  gpsCache.forEach(p =>
+    rows.push(`${p.lat},${p.lon},${Math.round(p.acc)},"${new Date(p.t).toLocaleString('pt-BR')}"`)
+  );
   const a = Object.assign(document.createElement('a'), {
     href:     URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' })),
-    download: `sentinel-admin-${new Date().toISOString().slice(0,10)}.csv`,
+    download: `sentinel-${new Date().toISOString().slice(0,10)}.csv`,
   });
   a.click();
   ui.toast('CSV exportado', 'success');
 }
 
-document.getElementById('btn-export-admin').addEventListener('click', exportCSV);
-document.getElementById('btn-export-hist').addEventListener('click',  exportCSV);
+document.getElementById('btn-export-sidebar').addEventListener('click', exportCSV);
+document.getElementById('btn-export-hist').addEventListener('click', exportCSV);
 
-// ── Zoom mapa ─────────────────────────────────
-document.getElementById('a-zoom-in').addEventListener('click',
-  () => ui.zoomMap('admin-map-canvas', gpsCache, 1.5));
-document.getElementById('a-zoom-out').addEventListener('click',
-  () => ui.zoomMap('admin-map-canvas', gpsCache, 0.67));
-
-// ── Views sidebar ─────────────────────────────
-document.querySelectorAll('.sidebar-item[data-view]').forEach(item => {
+// ── Tabs ──────────────────────────────────────
+document.querySelectorAll('.s-item[data-view]').forEach(item => {
   item.addEventListener('click', () => {
-    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.s-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.a-view').forEach(v => v.classList.remove('active'));
     item.classList.add('active');
+    document.getElementById('view-' + item.dataset.view)?.classList.add('active');
 
-    const views = ['dashboard', 'camera', 'gps', 'history'];
-    views.forEach(v => {
-      const el = document.getElementById(`view-${v}`);
-      if (el) el.style.display = v === item.dataset.view ? 'flex' : 'none';
-    });
+    // Força invalidação do mapa Leaflet ao exibir
+    setTimeout(() => {
+      leafMap?.invalidateSize();
+      leafMap2?.invalidateSize();
+    }, 50);
   });
 });
 
-// A view dashboard usa display:block por padrão (não flex)
-document.getElementById('view-dashboard').style.display = 'flex';
-document.getElementById('view-dashboard').style.flexDirection = 'column';
-document.getElementById('view-dashboard').style.gap = '16px';
-
-// ── Resize ────────────────────────────────────
-window.addEventListener('resize', () => {
-  if (gpsCache.length) ui.drawMap('admin-map-canvas', gpsCache);
-});
-
 // ── Boot ──────────────────────────────────────
+initMaps();
 await loadRecentGPS();
 subscribeGPS();
+await getClientDeviceId();
 </script>
 </body>
 </html>

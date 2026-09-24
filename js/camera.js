@@ -1,30 +1,30 @@
 // ─────────────────────────────────────────────
 //  camera.js — CameraManager
 //  Responsabilidades:
-//    - getUserMedia com constraints corretas
+//    - getUserMedia: câmera e/ou microfone
 //    - troca entre câmera frontal e traseira
-//    - expõe o MediaStream para o WebRTCManager
-//    - callbacks de estado para a UI
-//    - listener de comandos remotos via Supabase Realtime
+//    - expõe MediaStream para o WebRTCManager
+//    - listener de comandos remotos via Supabase
 // ─────────────────────────────────────────────
 
 import { supabase } from './supabase-client.js';
 import { CONFIG }   from './config.js';
 
 export class CameraManager {
-  #stream    = null;
-  #useFront  = false;
-  #channel   = null;   // Supabase Realtime channel
-  #onStart   = null;   // callback(stream)
-  #onStop    = null;   // callback()
-  #onError   = null;   // callback(message)
-  #onCommand = null;   // callback(command) — notifica a UI sobre comandos recebidos
+  #camStream  = null;   // stream só de vídeo
+  #micStream  = null;   // stream só de áudio
+  #useFront   = false;
+  #channel    = null;
+  #onStart    = null;   // callback(stream, mode) — mode: 'camera'|'mic'
+  #onStop     = null;   // callback(mode)
+  #onError    = null;   // callback(message)
+  #onCommand  = null;   // callback(command)
 
-  get isActive() { return this.#stream !== null; }
-  get stream()   { return this.#stream; }
-  get useFront() { return this.#useFront; }
+  get isCamActive() { return this.#camStream !== null; }
+  get isMicActive() { return this.#micStream !== null; }
+  get camStream()   { return this.#camStream; }
+  get micStream()   { return this.#micStream; }
 
-  /** @param {{ onStart, onStop, onError, onCommand }} callbacks */
   constructor({ onStart, onStop, onError, onCommand } = {}) {
     this.#onStart   = onStart   ?? (() => {});
     this.#onStop    = onStop    ?? (() => {});
@@ -32,13 +32,85 @@ export class CameraManager {
     this.#onCommand = onCommand ?? (() => {});
   }
 
-  /**
-   * Fica escutando comandos remotos enviados pelo admin via Supabase.
-   * Deve ser chamado assim que o app cliente abre — independente de
-   * qualquer interação do usuário.
-   */
+  // ── Câmera ────────────────────────────────
+
+  async startCamera() {
+    if (this.isCamActive) return;
+    try {
+      this.#camStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: this.#useFront ? 'user' : { ideal: 'environment' },
+          width:  { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      });
+      this.#onStart(this.#camStream, 'camera');
+    } catch (err) {
+      this.#onError(err.name === 'NotAllowedError'
+        ? 'Permissão de câmera negada.'
+        : `Câmera indisponível: ${err.message}`);
+    }
+  }
+
+  stopCamera() {
+    if (!this.isCamActive) return;
+    this.#camStream.getTracks().forEach(t => t.stop());
+    this.#camStream = null;
+    this.#onStop('camera');
+  }
+
+  async flip() {
+    this.#useFront = !this.#useFront;
+    if (this.isCamActive) {
+      this.stopCamera();
+      await this.startCamera();
+    }
+  }
+
+  // ── Microfone ─────────────────────────────
+
+  async startMic() {
+    if (this.isMicActive) return;
+    try {
+      this.#micStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+        video: false,
+      });
+      this.#onStart(this.#micStream, 'mic');
+    } catch (err) {
+      this.#onError(err.name === 'NotAllowedError'
+        ? 'Permissão de microfone negada.'
+        : `Microfone indisponível: ${err.message}`);
+    }
+  }
+
+  stopMic() {
+    if (!this.isMicActive) return;
+    this.#micStream.getTracks().forEach(t => t.stop());
+    this.#micStream = null;
+    this.#onStop('mic');
+  }
+
+  // ── Helpers ───────────────────────────────
+
+  attachTo(videoEl) {
+    if (!videoEl || !this.#camStream) return;
+    videoEl.srcObject = this.#camStream;
+  }
+
+  detachFrom(videoEl) {
+    if (!videoEl) return;
+    videoEl.srcObject = null;
+  }
+
+  // ── Comandos remotos ──────────────────────
+
   listenForCommands() {
-    if (this.#channel) return; // já escutando
+    if (this.#channel) return;
 
     this.#channel = supabase
       .channel('device-commands')
@@ -53,10 +125,11 @@ export class CameraManager {
         async ({ new: row }) => {
           this.#onCommand(row.command);
 
-          if (row.command === 'camera_start') {
-            await this.start();
-          } else if (row.command === 'camera_stop') {
-            this.stop();
+          switch (row.command) {
+            case 'camera_start': await this.startCamera(); break;
+            case 'camera_stop':        this.stopCamera();  break;
+            case 'mic_start':   await this.startMic();    break;
+            case 'mic_stop':           this.stopMic();    break;
           }
         }
       )
@@ -67,60 +140,8 @@ export class CameraManager {
       });
   }
 
-  /** Para de escutar comandos — chame ao destruir o app */
   stopListening() {
     this.#channel?.unsubscribe();
     this.#channel = null;
-  }
-
-  async start() {
-    if (this.isActive) return;
-
-    const constraints = {
-      video: {
-        facingMode: this.#useFront ? 'user' : { ideal: 'environment' },
-        width:  { ideal: 1280 },
-        height: { ideal: 720 },
-      },
-      audio: false,
-    };
-
-    try {
-      this.#stream = await navigator.mediaDevices.getUserMedia(constraints);
-      this.#onStart(this.#stream);
-    } catch (err) {
-      const msg = err.name === 'NotAllowedError'
-        ? 'Permissão de câmera negada.'
-        : `Câmera indisponível: ${err.message}`;
-      this.#onError(msg);
-    }
-  }
-
-  stop() {
-    if (!this.isActive) return;
-    this.#stream.getTracks().forEach(t => t.stop());
-    this.#stream = null;
-    this.#onStop();
-  }
-
-  /** Alterna entre câmera frontal e traseira */
-  async flip() {
-    this.#useFront = !this.#useFront;
-    if (this.isActive) {
-      this.stop();
-      await this.start();
-    }
-  }
-
-  /** Conecta o stream a um elemento <video> */
-  attachTo(videoEl) {
-    if (!videoEl || !this.#stream) return;
-    videoEl.srcObject = this.#stream;
-  }
-
-  /** Desconecta o stream de um elemento <video> */
-  detachFrom(videoEl) {
-    if (!videoEl) return;
-    videoEl.srcObject = null;
   }
 }

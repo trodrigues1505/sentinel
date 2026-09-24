@@ -22,11 +22,11 @@ export class UIController {
 
   toast(message, type = 'info') {
     const icons = {
-      success: 'M20 6 9 17 4 12',
-      error:   'M18 6 6 18M6 6l12 12',
-      info:    'M12 16v-4M12 8h.01',
+      success: '<polyline points="20,6 9,17 4,12"/>',
+      error:   '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+      info:    '<line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
     };
-    const path = icons[type] ?? icons.info;
+    const inner = icons[type] ?? icons.info;
 
     const el = document.createElement('div');
     el.className = `toast toast-${type}`;
@@ -34,7 +34,7 @@ export class UIController {
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="${path}"/>
+        ${inner}
       </svg>
       <span>${message}</span>`;
 
