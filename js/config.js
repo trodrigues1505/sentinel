@@ -1,45 +1,37 @@
-// ─────────────────────────────────────────────
-//  config.js — configurações centrais do app
-//  Anon key é segura aqui pois RLS está ativo.
-//  NUNCA coloque a service_role key neste arquivo.
-// ─────────────────────────────────────────────
+/* ─── CONFIG ─── */
+const SB_URL = "https://ahcrscstdtfawoogsugi.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoY3JzY3N0ZHRmYXdvb2dzdWdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2Mjk1MDgsImV4cCI6MjEwNDIwNTUwOH0.8ivWRA99AXXyBVFT3TQd5NuSod2eiowiI490Blt2zHM";
+const FN_URL = `${SB_URL}/functions/v1`;
+const ADMIN_COREN = "299283";
 
-export const CONFIG = {
-  supabase: {
-    url: 'https://nujliwytwjdoumhbxmpx.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51amxpd3l0d2pkb3VtaGJ4bXB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNjIxMzksImV4cCI6MjEwNTgzODEzOX0.NiT0ykdq_QoizsuYS72--crN--km2t69GY2tFSKRmrQ',
-  },
+const EMAIL_DOM = "@scfm.local";
+const emailDeRegistro = reg => String(reg||"").trim().toLowerCase() + EMAIL_DOM;
 
-  // Room secret para proteger o painel admin.
-  // O painel só carrega se a URL terminar com #7f4a9c2e1b8d3f6a
-  adminSecret: '7f4a9c2e1b8d3f6a',
+let _accessToken = null;
+const setAccessToken = t => { _accessToken = t || null; };
+const getAccessToken = () => _accessToken;
 
-  // ID deste dispositivo — gerado uma vez e salvo no localStorage
-  deviceId: localStorage.getItem('sentinel_device_id') ?? (() => {
-    const id = crypto.randomUUID();
-    localStorage.setItem('sentinel_device_id', id);
-    return id;
-  })(),
+/* ─── API helpers ─── */
+const H = userId => ({
+  "Content-Type": "application/json",
+  "apikey": SB_KEY,
+  "Authorization": `Bearer ${_accessToken || SB_KEY}`,
+  ...(userId ? { "x-user-id": userId } : {})
+});
 
-  gps: {
-    // Intervalo mínimo entre pontos enviados ao Supabase (ms)
-    minInterval: 15_000,
-    options: {
-      enableHighAccuracy: true,
-      timeout: 15_000,
-      maximumAge: 0,
-    },
-  },
+async function sbGet(table, params = "") {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers: H() });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
 
-  webrtc: {
-    // Servidores STUN públicos para negociação P2P
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-    ],
-    // ID da sala — fixo para uso solo
-    roomId: 'main',
-    // Intervalo de polling para novos sinais WebRTC (ms)
-    pollInterval: 1_500,
-  },
-};
+async function fn(name, body, userId) {
+  const r = await fetch(`${FN_URL}/${name}`, {
+    method: "POST",
+    headers: H(userId),
+    body: JSON.stringify(body)
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || "Erro desconhecido");
+  return data;
+}

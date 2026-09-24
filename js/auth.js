@@ -1,48 +1,64 @@
-// ─────────────────────────────────────────────
-//  auth.js — guarda de acesso ao painel admin
-//  Verifica se o hash da URL bate com o secret.
-//  Sem o secret correto, o painel não carrega.
-// ─────────────────────────────────────────────
-
-import { CONFIG } from './config.js';
-
-export class AuthGuard {
-  /** Retorna true se o acesso está autorizado */
-  static isAuthorized() {
-    const hash = window.location.hash.replace('#', '').trim();
-    return hash === CONFIG.adminSecret;
+/* ─── Supabase Realtime client (carregado lazy via CDN) ─── */
+let _sbClient = null;
+async function getSbClient() {
+  if (_sbClient) return _sbClient;
+  if (!window.supabase) {
+    await new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";
+      s.onload = res;
+      s.onerror = rej;
+      document.head.appendChild(s);
+    });
   }
+  _sbClient = window.supabase.createClient(SB_URL, SB_KEY);
+  _sbClient.auth.onAuthStateChange((_e, sess) => setAccessToken(sess?.access_token));
+  return _sbClient;
+}
 
-  /**
-   * Bloqueia o acesso se não autorizado.
-   * Substitui todo o body por uma tela de bloqueio.
-   */
-  static enforce() {
-    if (this.isAuthorized()) return true;
+/* ─── Autenticacao ─── */
+async function authLogin(registro, senha) {
+  const sb = await getSbClient();
+  const { data, error } = await sb.auth.signInWithPassword({
+    email: emailDeRegistro(registro), password: senha
+  });
+  if (error) throw new Error("Registro ou senha inválidos.");
+  setAccessToken(data.session.access_token);
+  return await carregarPerfil(data.session.user.id);
+}
 
-    document.body.innerHTML = `
-      <div style="
-        height:100dvh;
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        justify-content:center;
-        gap:16px;
-        background:#0a0c10;
-        color:#3e4455;
-        font-family:system-ui,sans-serif;
-        text-align:center;
-        padding:24px;
-      ">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="1.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0110 0v4"/>
-        </svg>
-        <p style="font-size:14px;color:#7c8394">Acesso não autorizado</p>
-      </div>`;
-
-    return false;
+async function carregarPerfil(authUid) {
+  const rows = await sbGet("users", `auth_uid=eq.${authUid}&limit=1`);
+  if (!rows.length) {
+    await authLogout();
+    throw new Error("Cadastro não aprovado. Procure a administradora.");
   }
+  return rows[0];
+}
+
+async function authLogout() {
+  try { const sb = await getSbClient(); await sb.auth.signOut(); } catch (e) {}
+  setAccessToken(null);
+}
+
+async function authRestaurar() {
+  const sb = await getSbClient();
+  const { data } = await sb.auth.getSession();
+  if (!data.session) return null;
+  setAccessToken(data.session.access_token);
+  try { return await carregarPerfil(data.session.user.id); }
+  catch (e) { return null; }
+}
+
+async function authTrocarSenha(novaSenha, userRowId) {
+  const sb = await getSbClient();
+  const { error } = await sb.auth.updateUser({ password: novaSenha });
+  if (error) throw new Error(error.message);
+  const r = await fetch(`${SB_URL}/rest/v1/users?id=eq.${userRowId}`, {
+    method: "PATCH",
+    headers: { ...H(), Prefer: "return=representation" },
+    body: JSON.stringify({ senha_trocada: true })
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return (await r.json())[0];
 }
