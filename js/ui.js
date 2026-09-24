@@ -1,317 +1,289 @@
-/* ─── SMALL UI ─── */
-const inp_s = {
-  width: "100%",
-  padding: "8px 10px",
-  border: "1px solid #E2E8F0",
-  borderRadius: 7,
-  fontSize: 13,
-  color: "#0F172A",
-  background: "#fff",
-  fontFamily: "inherit"
-};
-const lbl_s = {
-  fontSize: 10,
-  fontWeight: 600,
-  color: "#94A3B8",
-  textTransform: "uppercase",
-  letterSpacing: ".05em",
-  display: "block",
-  marginBottom: 3
-};
-function Btn({
-  children,
-  onClick,
-  variant = "primary",
-  style: ex = {},
-  disabled = false,
-  type = "button"
-}) {
-  const v = {
-    primary: {
-      background: "#0F172A",
-      color: "#fff",
-      border: "none"
-    },
-    ghost: {
-      background: "none",
-      color: "#64748B",
-      border: "1px solid #E2E8F0"
-    },
-    danger: {
-      background: "none",
-      color: "#DC2626",
-      border: "1px solid #FCA5A5"
-    },
-    green: {
-      background: "#16A34A",
-      color: "#fff",
-      border: "none"
-    },
-    wa: {
-      background: "#25D366",
-      color: "#fff",
-      border: "none"
-    }
-  };
-  return /*#__PURE__*/React.createElement("button", {
-    type: type,
-    onClick: onClick,
-    disabled: disabled,
-    style: {
-      padding: "7px 16px",
-      borderRadius: 8,
-      fontSize: 13,
-      fontWeight: 600,
-      cursor: disabled ? "not-allowed" : "pointer",
-      opacity: disabled ? .6 : 1,
-      ...(v[variant] || v.primary),
-      ...ex
-    }
-  }, children);
-}
-function Badge({
-  grav
-}) {
-  const c = GC[grav] || GC.urgencia;
-  return /*#__PURE__*/React.createElement("span", {
-    style: {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 4,
-      fontSize: 10,
-      fontWeight: 600,
-      padding: "2px 8px",
-      borderRadius: 99,
-      background: c.bg,
-      color: c.text,
-      border: `1px solid ${c.border}`,
-      whiteSpace: "nowrap"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: 5,
-      height: 5,
-      borderRadius: "50%",
-      background: c.dot,
-      flexShrink: 0
-    }
-  }), c.label);
-}
-function StatusPill({
-  status
-}) {
-  if (!status) return null;
-  const m = {
-    "EVADIU": "#FEE2E2|#991B1B",
-    "EVASÃO": "#FEE2E2|#991B1B",
-    "ALTA": "#DCFCE7|#14532D",
-    "ALTA MÉDICA": "#DCFCE7|#14532D",
-    "FINALIZADO VIA CROSS": "#F3E8FF|#581C87",
-    "RESOLVIDO COM RECURSOS LOCAIS": "#DCFCE7|#14532D",
-    "REINSERIR": "#FEF3C7|#92400E",
-    "ENCAMINHAR AMANHÃ": "#EFF6FF|#1E40AF"
-  };
-  const [bg, color] = (m[status] || "#F1F5F9|#475569").split("|");
-  return /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 9,
-      fontWeight: 700,
-      padding: "1px 6px",
-      borderRadius: 3,
-      background: bg,
-      color,
-      whiteSpace: "nowrap",
-      textTransform: "uppercase",
-      letterSpacing: ".04em"
-    }
-  }, status);
-}
-function AmbBadge({
-  amb
-}) {
-  if (!amb) return null;
-  const av = amb.includes("Av");
-  return /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 10,
-      fontWeight: 600,
-      padding: "2px 7px",
-      borderRadius: 4,
-      whiteSpace: "nowrap",
-      background: av ? "#FEE2E2" : "#EFF6FF",
-      color: av ? "#991B1B" : "#1E40AF",
-      border: `1px solid ${av ? "#FCA5A5" : "#BFDBFE"}`
-    }
-  }, av ? "🚨 Avançada" : "🚐 Básica");
-}
-function Toast({
-  toast
-}) {
-  if (!toast) return null;
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "fixed",
-      bottom: 24,
-      left: "50%",
-      transform: "translateX(-50%)",
-      padding: "10px 20px",
-      borderRadius: 10,
-      fontSize: 13,
-      fontWeight: 500,
-      boxShadow: "0 4px 20px rgba(0,0,0,.14)",
-      zIndex: 9999,
-      whiteSpace: "nowrap",
-      pointerEvents: "none",
-      background: toast.type === "err" ? "#FEE2E2" : "#F0FDF4",
-      border: `1px solid ${toast.type === "err" ? "#FCA5A5" : "#86EFAC"}`,
-      color: toast.type === "err" ? "#991B1B" : "#166534"
-    }
-  }, toast.msg);
-}
-function ModalShell({
-  onClose,
-  title,
-  subtitle,
-  children,
-  footer,
-  maxWidth = 560
-}) {
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "fixed",
-      inset: 0,
-      background: "rgba(15,23,42,.5)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 1000,
-      padding: 16
-    },
-    onClick: undefined
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "ge-modal-inner", style: {
-      background: "#fff",
-      borderRadius: 16,
-      width: "100%",
-      maxWidth,
-      maxHeight: "92vh",
-      overflowY: "auto",
-      boxShadow: "0 20px 60px rgba(0,0,0,.22)",
-      WebkitOverflowScrolling: "touch"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "14px 20px",
-      borderBottom: "1px solid #F1F5F9",
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      position: "sticky",
-      top: 0,
-      background: "#fff",
-      borderRadius: "16px 16px 0 0",
-      zIndex: 1
-    }
-  }, /*#__PURE__*/React.createElement("div", null, subtitle && /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 10,
-      fontWeight: 600,
-      color: "#94A3B8",
-      textTransform: "uppercase",
-      letterSpacing: ".05em"
-    }
-  }, subtitle), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontWeight: 700,
-      fontSize: 15,
-      color: "#0F172A",
-      marginTop: subtitle ? 2 : 0
-    }
-  }, title)), /*#__PURE__*/React.createElement("button", {
-    onClick: onClose,
-    style: {
-      background: "none",
-      border: "none",
-      cursor: "pointer",
-      color: "#94A3B8",
-      fontSize: 20,
-      padding: 4
-    }
-  }, "✕")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "16px 20px"
-    }
-  }, children), footer && /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "10px 20px",
-      borderTop: "1px solid #F1F5F9",
-      display: "flex",
-      gap: 8,
-      justifyContent: "flex-end",
-      position: "sticky",
-      bottom: 0,
-      background: "#fff",
-      borderRadius: "0 0 16px 16px"
-    }
-  }, footer)));
-}
+// ─────────────────────────────────────────────
+//  ui.js — UIController
+//  Responsabilidades:
+//    - toasts
+//    - troca de abas / views
+//    - atualização de stats e mapa canvas
+//    - estados de botões e badges
+//  Não conhece GPSTracker, CameraManager nem WebRTC.
+//  Recebe dados e atualiza o DOM — nada mais.
+// ─────────────────────────────────────────────
 
-/* Field fora dos modais — fix do perde foco */
-function Field({
-  label,
-  fieldKey,
-  value,
-  onChange,
-  disabled,
-  as,
-  opts,
-  full,
-  placeholder = ""
-}) {
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 10,
-      gridColumn: full ? "1/-1" : undefined
+export class UIController {
+  #mapScale   = 180_000;
+  #startTime  = Date.now();
+  #uptimeId   = null;
+
+  constructor() {
+    this.#uptimeId = setInterval(() => this.#tickUptime(), 1_000);
+  }
+
+  // ── TOASTS ────────────────────────────────
+
+  toast(message, type = 'info') {
+    const icons = {
+      success: 'M20 6 9 17 4 12',
+      error:   'M18 6 6 18M6 6l12 12',
+      info:    'M12 16v-4M12 8h.01',
+    };
+    const path = icons[type] ?? icons.info;
+
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="${path}"/>
+      </svg>
+      <span>${message}</span>`;
+
+    const container = document.getElementById('toast-container');
+    container?.appendChild(el);
+    setTimeout(() => el.remove(), 3_200);
+  }
+
+  // ── TABS ──────────────────────────────────
+
+  switchTab(viewId) {
+    document.querySelectorAll('.view').forEach(v =>
+      v.classList.toggle('active', v.id === `view-${viewId}`)
+    );
+    document.querySelectorAll('.nav-tab').forEach(t =>
+      t.classList.toggle('active', t.dataset.tab === viewId)
+    );
+  }
+
+  // ── STATS ─────────────────────────────────
+
+  setGPSCount(n) {
+    this.#setText('stat-gps', n);
+  }
+
+  setLastGPSTime(date) {
+    this.#setText('stat-gps-time', date.toLocaleTimeString('pt-BR'));
+  }
+
+  setCoords({ lat, lon, acc }) {
+    this.#setText('coord-lat', lat.toFixed(6));
+    this.#setText('coord-lon', lon.toFixed(6));
+    this.#setText('coord-acc', Math.round(acc));
+    this.#setText('map-coord', `${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+
+    this.#show('map-overlay');
+    this.#hide('map-empty');
+  }
+
+  // ── CÂMERA ────────────────────────────────
+
+  setCameraActive(active) {
+    this.#toggle('cam-placeholder', !active);
+    this.#toggle('cam-live-badge', active);
+    this.#toggle('btn-cam-start',  !active);
+    this.#toggle('btn-cam-stop',   active);
+    this.#toggle('btn-cam-flip',   active);
+
+    const chip = document.getElementById('cam-chip');
+    if (chip) {
+      chip.textContent  = active ? 'Ao vivo' : 'Inativa';
+      chip.className    = active ? 'chip chip-green' : 'chip chip-gray';
     }
-  }, /*#__PURE__*/React.createElement("label", {
-    style: lbl_s
-  }, label), opts ? /*#__PURE__*/React.createElement("select", {
-    value: value || "",
-    onChange: e => onChange(fieldKey, e.target.value),
-    disabled: disabled,
-    style: inp_s
-  }, opts.map(o => /*#__PURE__*/React.createElement("option", {
-    key: o.v ?? o,
-    value: o.v ?? o
-  }, o.t ?? o))) : as === "textarea" ? /*#__PURE__*/React.createElement("textarea", {
-    rows: 2,
-    value: value || "",
-    onChange: e => onChange(fieldKey, e.target.value),
-    disabled: disabled,
-    placeholder: placeholder,
-    style: {
-      ...inp_s,
-      resize: "vertical"
+
+    this.#setText('stat-cam', active ? 'On' : 'Off');
+  }
+
+  attachVideo(stream) {
+    const video = document.getElementById('cam-video');
+    if (!video) return;
+    video.srcObject = stream;
+    video.style.display = 'block';
+  }
+
+  detachVideo() {
+    const video = document.getElementById('cam-video');
+    if (!video) return;
+    video.srcObject = null;
+    video.style.display = 'none';
+  }
+
+  // ── GPS TRACKING STATE ─────────────────────
+
+  setTrackingActive(active) {
+    this.#toggle('btn-gps-start', !active);
+    this.#toggle('btn-gps-stop',  active);
+
+    const pill = document.getElementById('status-pill');
+    if (pill) {
+      pill.textContent = active ? 'Rastreando' : 'Ativo';
+      pill.className   = active ? 'status-pill tracking' : 'status-pill';
     }
-  }) : /*#__PURE__*/React.createElement("input", {
-    value: value || "",
-    onChange: e => onChange(fieldKey, e.target.value),
-    disabled: disabled,
-    placeholder: placeholder,
-    style: inp_s
-  }));
+  }
+
+  // ── HISTORY ───────────────────────────────
+
+  addHistoryItem({ lat, lon, acc, t }) {
+    const list = document.getElementById('hist-list');
+    if (!list) return;
+
+    // Remove empty state na primeira entrada
+    list.querySelector('.empty-state')?.remove();
+
+    const time = new Date(t).toLocaleTimeString('pt-BR', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    });
+
+    const item = document.createElement('div');
+    item.className = 'hist-item';
+    item.innerHTML = `
+      <div class="hist-icon">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+      </div>
+      <div class="hist-body">
+        <div class="hist-title">${lat.toFixed(5)}, ${lon.toFixed(5)}</div>
+        <div class="hist-meta">±${Math.round(acc)}m</div>
+      </div>
+      <div class="hist-time">${time}</div>`;
+
+    list.insertBefore(item, list.firstChild);
+    if (list.children.length > 100) list.removeChild(list.lastChild);
+  }
+
+  clearHistoryUI() {
+    const list = document.getElementById('hist-list');
+    if (!list) return;
+    list.innerHTML = `
+      <div class="empty-state">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12,6 12,12 16,14"/>
+        </svg>
+        <p>Sem registros</p>
+        <span>Inicie o rastreamento</span>
+      </div>`;
+  }
+
+  // ── MAPA ──────────────────────────────────
+
+  drawMap(canvasId, points) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !points.length) return;
+
+    const ctx = canvas.getContext('2d');
+    const W = canvas.offsetWidth;
+    const H = canvas.offsetHeight;
+    canvas.width  = W;
+    canvas.height = H;
+
+    // Fundo
+    ctx.fillStyle = '#0d1017';
+    ctx.fillRect(0, 0, W, H);
+
+    // Grid sutil
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 36) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = 0; y < H; y += 36) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+
+    const last = points.at(-1);
+    const toScreen = p => ({
+      x: W / 2 + (p.lon - last.lon) * this.#mapScale,
+      y: H / 2 - (p.lat - last.lat) * this.#mapScale,
+    });
+
+    // Trilha
+    if (points.length > 1) {
+      ctx.beginPath();
+      const p0 = toScreen(points[0]);
+      ctx.moveTo(p0.x, p0.y);
+      points.slice(1).forEach(p => {
+        const s = toScreen(p);
+        ctx.lineTo(s.x, s.y);
+      });
+      ctx.strokeStyle = 'rgba(59,130,246,0.45)';
+      ctx.lineWidth   = 2;
+      ctx.stroke();
+    }
+
+    // Pontos anteriores
+    points.slice(0, -1).forEach(p => {
+      const s = toScreen(p);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(59,130,246,0.35)';
+      ctx.fill();
+    });
+
+    // Marcador atual
+    const cur = toScreen(last);
+    ctx.beginPath();
+    ctx.arc(cur.x, cur.y, 12, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(59,130,246,0.15)';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(cur.x, cur.y, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#3b82f6';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(cur.x, cur.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+  }
+
+  zoomMap(canvasId, points, factor) {
+    this.#mapScale = Math.max(5_000, Math.min(2_000_000, this.#mapScale * factor));
+    this.drawMap(canvasId, points);
+  }
+
+  // ── UPTIME ────────────────────────────────
+
+  #tickUptime() {
+    const s   = Math.floor((Date.now() - this.#startTime) / 1_000);
+    const h   = Math.floor(s / 3_600);
+    const m   = Math.floor((s % 3_600) / 60);
+    const sec = s % 60;
+    const str = h > 0
+      ? `${this.#pad(h)}:${this.#pad(m)}:${this.#pad(sec)}`
+      : `${this.#pad(m)}:${this.#pad(sec)}`;
+    this.#setText('stat-uptime', str);
+  }
+
+  // ── HELPERS ───────────────────────────────
+
+  #setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  #show(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = '';
+  }
+
+  #hide(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  }
+
+  #toggle(id, visible) {
+    visible ? this.#show(id) : this.#hide(id);
+  }
+
+  #pad(n) { return String(n).padStart(2, '0'); }
+
+  destroy() {
+    clearInterval(this.#uptimeId);
+  }
 }
-
-function TempoTag({ label, color, bg }) {
-  if (!label) return null;
-  return React.createElement("span", {
-    style: { fontSize:9, fontWeight:700, padding:"2px 7px", borderRadius:99,
-      background: bg||"#F0F9FF", color: color||"#0369A1",
-      border:`1px solid ${color||"#0369A1"}33`, whiteSpace:"nowrap" }
-  }, label);
-}
-
-
-/* ════════════════════════════════════════════
-   AÇÕES DE ENFERMAGEM
-   ════════════════════════════════════════════ */

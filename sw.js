@@ -1,86 +1,43 @@
-// Gerência de Enfermagem — service worker
-// A fonte de verdade da versao e version.json. Este valor so nomeia o cache;
-// mantenha-o igual ao de version.json por clareza, mas quem dispara o aviso de
-// atualizacao no app e sempre o version.json.
-const APP_VERSION = '2026.09.14-3';
-const CACHE = 'ge-' + APP_VERSION;
+// ─────────────────────────────────────────────
+//  sw.js — Service Worker Sentinel
+//  Estratégia simples: network-first.
+//  Não tenta fazer cache na instalação para
+//  evitar falhas com caminhos de subdiretório.
+// ─────────────────────────────────────────────
 
-// Caminhos relativos ao escopo do SW — funcionam em qualquer subpasta.
-const ASSETS = ['./', './index.html', './manifest.json', './canon.js'];
+const CACHE = 'sentinel-v2';
 
-self.addEventListener('install', e => {
-  e.waitUntil((async () => {
-    const c = await caches.open(CACHE);
-    // addAll é atômico: um 404 derruba o install inteiro.
-    // Individual + allSettled deixa o SW instalar mesmo se um asset faltar.
-    await Promise.allSettled(ASSETS.map(u => c.add(new Request(u, { cache: 'reload' }))));
-    // NÃO chamamos skipWaiting aqui: o app pergunta ao usuário antes de trocar.
-  })());
-});
-
+self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => {
-  e.waitUntil((async () => {
-    const keys = await caches.keys();
-    await Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)));
-    await self.clients.claim();
-  })());
-});
-
-// O app manda esta mensagem quando o usuário aceita atualizar.
-self.addEventListener('message', e => {
-  if (e.data === 'SKIP_WAITING' || (e.data && e.data.type === 'SKIP_WAITING')) {
-    self.skipWaiting();
-  }
-  if (e.data && e.data.type === 'GET_VERSION') {
-    e.source && e.source.postMessage({ type: 'VERSION', version: APP_VERSION });
-  }
+  e.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(
+        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+      ))
+      .then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', e => {
-  const req = e.request;
-  const url = req.url;
+  const url = new URL(e.request.url);
 
-  if (!url.startsWith('http://') && !url.startsWith('https://')) return;
-  if (req.method !== 'GET') return;
+  // Supabase e esm.sh — nunca intercepta
+  if (url.hostname.includes('supabase.co') ||
+      url.hostname.includes('esm.sh')) return;
 
-  // A página de reset nunca pode ser servida do cache.
-  if (new URL(url).pathname.endsWith('/reset.html')) return;
-
-  // Supabase sempre na rede.
-  if (url.includes('supabase.co')) return;
-
-  const isNavigation =
-    req.mode === 'navigate' ||
-    req.destination === 'document' ||
-    new URL(url).pathname.endsWith('/index.html');
-
-  // O app inteiro vive no index.html: network-first, cache só como fallback offline.
-  if (isNavigation) {
-    e.respondWith((async () => {
-      try {
-        const res = await fetch(req);
-        if (res && res.ok) {
+  // Estratégia network-first com fallback para cache
+  e.respondWith(
+    fetch(e.request)
+      .then(res => {
+        // Só faz cache de respostas OK de GET
+        if (e.request.method === 'GET' && res.ok) {
           const clone = res.clone();
-          caches.open(CACHE).then(c => c.put('./index.html', clone)).catch(() => {});
+          caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return res;
-      } catch (err) {
-        const cached = await caches.match('./index.html');
-        return cached || Response.error();
-      }
-    })());
-    return;
-  }
-
-  // Demais assets (CDNs, ícones): cache-first com atualização em segundo plano.
-  e.respondWith((async () => {
-    const cached = await caches.match(req);
-    if (cached) return cached;
-    const res = await fetch(req);
-    if (res && res.ok) {
-      const clone = res.clone();
-      caches.open(CACHE).then(c => { try { c.put(req, clone); } catch (err) {} });
-    }
-    return res;
-  })());
+      })
+      .catch(() => caches.match(e.request)
+        .then(cached => cached || caches.match('/index.html'))
+      )
+  );
 });

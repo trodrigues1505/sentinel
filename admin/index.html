@@ -277,8 +277,9 @@
             Câmera ao vivo
           </div>
           <div class="card-actions">
-            <span class="chip chip-gray" id="cam-chip-admin">Aguardando</span>
-            <button class="btn btn-primary" style="height:32px;padding:0 12px;font-size:12px" id="btn-connect-cam">Conectar</button>
+            <span class="chip chip-gray" id="cam-chip-admin">Inativa</span>
+            <button class="btn btn-danger" style="height:32px;padding:0 12px;font-size:12px;display:none" id="btn-stop-cam">Parar</button>
+            <button class="btn btn-primary" style="height:32px;padding:0 12px;font-size:12px" id="btn-connect-cam">Ativar câmera</button>
           </div>
         </div>
         <div class="admin-cam-wrap">
@@ -289,8 +290,8 @@
               <path d="M23 7l-7 5 7 5V7z"/>
               <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
             </svg>
-            <p>Aguardando transmissão</p>
-            <span>Ative a câmera no dispositivo cliente e clique em Conectar</span>
+            <p>Câmera inativa</p>
+            <span>Clique em "Ativar câmera" para ligar remotamente</span>
           </div>
         </div>
       </div>
@@ -362,6 +363,7 @@ import { AuthGuard }     from '../js/auth.js';
 import { supabase }      from '../js/supabase-client.js';
 import { WebRTCManager } from '../js/webrtc.js';
 import { UIController }  from '../js/ui.js';
+import { CONFIG }        from '../js/config.js';
 
 // ── Verifica acesso ─────────────────────────
 if (!AuthGuard.enforce()) throw new Error('Unauthorized');
@@ -388,15 +390,69 @@ function setRTCStatus(state) {
   label.textContent = txt;
 }
 
-// ── Câmera — conectar via WebRTC ─────────────
+// ── Device ID do cliente ──────────────────────
+// Lido do Supabase: último gps_point registrado
+let clientDeviceId = null;
+
+async function getClientDeviceId() {
+  if (clientDeviceId) return clientDeviceId;
+  const { data } = await supabase
+    .from('gps_points')
+    .select('device_id')
+    .order('created_at', { ascending: false })
+    .limit(1);
+  clientDeviceId = data?.[0]?.device_id ?? null;
+  return clientDeviceId;
+}
+
+// ── Enviar comando remoto ao cliente ──────────
+async function sendCommand(command) {
+  const deviceId = await getClientDeviceId();
+
+  if (!deviceId) {
+    ui.toast('Dispositivo não encontrado — cliente ainda não enviou GPS.', 'error');
+    return false;
+  }
+
+  const { error } = await supabase
+    .from('device_commands')
+    .insert({ device_id: deviceId, command });
+
+  if (error) {
+    ui.toast('Erro ao enviar comando: ' + error.message, 'error');
+    return false;
+  }
+
+  return true;
+}
+
+// ── Câmera — ativar remotamente + WebRTC ──────
 document.getElementById('btn-connect-cam').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-connect-cam');
+  btn.disabled    = true;
+  btn.textContent = 'Ativando…';
+
+  // 1. Envia comando ao cliente para abrir a câmera
+  const sent = await sendCommand('camera_start');
+  if (!sent) {
+    btn.disabled    = false;
+    btn.textContent = 'Ativar câmera';
+    return;
+  }
+
+  ui.toast('Comando enviado — aguardando câmera do cliente…', 'info');
+
+  // 2. Aguarda 1.5s para o cliente abrir a câmera e iniciar o WebRTC
+  await new Promise(r => setTimeout(r, 1500));
+
+  // 3. Admin conecta como callee (recebe o stream)
   if (rtc) { rtc.disconnect(); rtc = null; }
 
   rtc = new WebRTCManager('callee', {
     onStream: stream => {
       const video = document.getElementById('admin-cam-video');
-      video.srcObject = stream;
-      video.style.display = 'block';
+      video.srcObject          = stream;
+      video.style.display      = 'block';
       document.getElementById('admin-cam-placeholder').style.display = 'none';
       document.getElementById('admin-live-badge').style.display       = 'flex';
 
@@ -406,14 +462,55 @@ document.getElementById('btn-connect-cam').addEventListener('click', async () =>
 
       document.getElementById('a-stat-cam').textContent     = 'On';
       document.getElementById('a-stat-cam-sub').textContent = 'ao vivo';
+
+      btn.disabled    = false;
+      btn.textContent = 'Reconectar';
+      document.getElementById('btn-stop-cam').style.display = 'inline-flex';
     },
-    onStatus: state => setRTCStatus(state),
-    onError:  msg   => ui.toast(msg, 'error'),
+    onStatus: state => {
+      setRTCStatus(state);
+      if (state === 'failed' || state === 'disconnected') {
+        btn.disabled    = false;
+        btn.textContent = 'Ativar câmera';
+      }
+    },
+    onError: msg => {
+      ui.toast(msg, 'error');
+      btn.disabled    = false;
+      btn.textContent = 'Ativar câmera';
+    },
   });
 
   setRTCStatus('connecting');
   await rtc.connect();
-  ui.toast('Aguardando transmissão do cliente…', 'info');
+});
+
+// ── Câmera — parar remotamente ────────────────
+document.getElementById('btn-stop-cam').addEventListener('click', async () => {
+  await sendCommand('camera_stop');
+  rtc?.disconnect();
+  rtc = null;
+  setRTCStatus('inactive');
+
+  const video = document.getElementById('admin-cam-video');
+  video.srcObject     = null;
+  video.style.display = 'none';
+  document.getElementById('admin-cam-placeholder').style.display = 'flex';
+  document.getElementById('admin-live-badge').style.display       = 'none';
+  document.getElementById('btn-stop-cam').style.display           = 'none';
+
+  const chip = document.getElementById('cam-chip-admin');
+  chip.textContent = 'Inativa';
+  chip.className   = 'chip chip-gray';
+
+  document.getElementById('a-stat-cam').textContent     = 'Off';
+  document.getElementById('a-stat-cam-sub').textContent = 'inativa';
+
+  const btn = document.getElementById('btn-connect-cam');
+  btn.disabled    = false;
+  btn.textContent = 'Ativar câmera';
+
+  ui.toast('Câmera desativada', 'info');
 });
 
 // ── GPS Realtime ──────────────────────────────
