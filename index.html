@@ -13,9 +13,7 @@
 <link rel="stylesheet" href="css/app.css">
 <title>&#x200B;</title>
 <style>
-/* ── PROBLEMA 1: câmera sem corte ── */
-/* object-fit:contain mostra o frame inteiro,
-   fundo preto preenche as faixas laterais    */
+/* câmera sem corte */
 #cam-video {
   width: 100%;
   height: 100%;
@@ -24,39 +22,41 @@
   display: none;
 }
 
-/* ── PROBLEMA 2: fullscreen overlay ── */
-/* Quando entramos em fullscreen via CSS fallback,
-   o vídeo cobre a tela toda                  */
+/* fullscreen overlay fallback */
 .cam-fullscreen-overlay {
-  position: fixed;
-  inset: 0;
+  position: fixed; inset: 0;
   background: #000;
   z-index: 99999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
 }
 .cam-fullscreen-overlay video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  width: 100%; height: 100%; object-fit: contain;
 }
 .cam-fullscreen-close {
   position: absolute;
-  top: env(safe-area-inset-top, 16px);
-  right: 16px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.15);
-  border: none;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  top: env(safe-area-inset-top, 16px); right: 16px;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(255,255,255,.15); border: none; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; backdrop-filter: blur(8px);
+}
+
+/* botão rastro — feedback visual de estado */
+#btn-trail-toggle {
+  display: flex; align-items: center; gap: 5px;
+  height: 30px; padding: 0 10px; font-size: 11px;
+  transition: background 150ms, color 150ms;
+}
+#btn-trail-toggle.trail-on {
+  background: var(--acc-bg, rgba(22,163,74,.08));
+  color: var(--acc, #16a34a);
+  border: 1px solid rgba(22,163,74,.2);
+  border-radius: var(--r-md, 8px);
+}
+#btn-trail-toggle.trail-off {
+  background: transparent;
+  color: var(--t2);
+  border: 1px solid transparent;
 }
 </style>
 </head>
@@ -170,7 +170,6 @@
           </div>
           <div style="display:flex;gap:6px;align-items:center">
             <span class="chip chip-gray" id="cam-chip">Inativa</span>
-            <!-- PROBLEMA 2: botão fullscreen -->
             <button class="btn btn-ghost btn-icon" id="btn-fullscreen" title="Tela cheia" style="display:none;width:32px;height:32px">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="15,3 21,3 21,9"/><polyline points="9,21 3,21 3,15"/>
@@ -179,11 +178,8 @@
             </button>
           </div>
         </div>
-
-        <!-- PROBLEMA 1: cam-wrap com fundo preto, vídeo usa object-fit:contain via CSS -->
         <div class="cam-wrap" style="height:280px;background:#000" id="cam-wrap">
           <div class="cam-live-badge" id="cam-live-badge">AO VIVO</div>
-          <!-- #cam-video estilizado no <style> acima: object-fit:contain -->
           <video id="cam-video" autoplay muted playsinline></video>
           <div class="cam-placeholder" id="cam-placeholder">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -197,7 +193,6 @@
             REC
           </div>
         </div>
-
         <div id="mic-status" style="display:none;align-items:center;gap:8px;padding:8px 16px;background:rgba(217,119,6,.06);border-top:1px solid rgba(217,119,6,.12)">
           <div style="width:7px;height:7px;border-radius:50%;background:var(--yellow);animation:pulse 1.5s infinite"></div>
           <span style="font-size:12px;font-weight:600;color:var(--yellow)">Microfone ativo</span>
@@ -219,7 +214,7 @@
         </div>
       </div>
 
-      <!-- GPS -->
+      <!-- LOCALIZAÇÃO -->
       <div class="card">
         <div class="card-header">
           <div class="card-title">
@@ -228,9 +223,18 @@
             </svg>
             Localização
           </div>
-          <div style="display:flex;gap:6px">
-            <button class="btn btn-ghost" style="height:30px;padding:0 10px;font-size:11px" id="btn-trail-toggle">
-              Com rastro
+          <div style="display:flex;gap:6px;align-items:center">
+            <!--
+              Botão de rastro.
+              Estado inicial: showTrail=true → classe trail-on, texto "Rastro ativo".
+              Ao clicar: showTrail=false → classe trail-off, texto "Só posição".
+              A função syncTrailButton() mantém isso em sincronia.
+            -->
+            <button class="btn btn-ghost trail-on" id="btn-trail-toggle" title="Alternar exibição do rastro">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3,17 9,11 13,15 21,7"/>
+              </svg>
+              <span id="trail-label">Rastro ativo</span>
             </button>
             <button class="btn btn-ghost btn-icon" style="width:30px;height:30px" id="btn-refresh-gps" title="Atualizar posição">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -337,7 +341,7 @@ let showTrail  = true;
 let recorder   = null;
 let recChunks  = [];
 
-// ── Setup ─────────────────────────────────────
+// ── Setup ──────────────────────────────────────
 const SETUP_KEY = 'sentinel_setup_done';
 if (localStorage.getItem(SETUP_KEY)) {
   showApp();
@@ -371,39 +375,50 @@ function showApp() {
   init();
 }
 
-// ── Init ──────────────────────────────────────
+// ── Helpers ────────────────────────────────────
+
+// Centraliza o redraw passando showTrail para ui.drawMap
+function redrawMap() {
+  if (!gps?.points?.length) return;
+  const pts = showTrail ? gps.points : [gps.lastPoint];
+  ui.drawMap('map-canvas', pts, showTrail);
+}
+
+// Mantém o botão de rastro sincronizado com o estado showTrail
+function syncTrailButton() {
+  const btn   = document.getElementById('btn-trail-toggle');
+  const label = document.getElementById('trail-label');
+  if (!btn || !label) return;
+  btn.className = showTrail
+    ? 'btn btn-ghost trail-on'
+    : 'btn btn-ghost trail-off';
+  label.textContent = showTrail ? 'Rastro ativo' : 'Só posição';
+}
+
+// ── Init ───────────────────────────────────────
 function init() {
   document.getElementById('device-id-label').textContent = CONFIG.deviceId.slice(0, 8) + '…';
 
-  // ── GPS ───────────────────────────────────
+  // ── GPS ─────────────────────────────────────
   gps = new GPSTracker({
     onUpdate: point => {
       ui.setGPSCount(gps.points.length);
       ui.setLastGPSTime(new Date(point.t));
       ui.setCoords(point);
-      const pts = showTrail ? gps.points : [point];
-      ui.drawMap('map-canvas', pts);
-      document.getElementById('map-coord').textContent = `${point.lat.toFixed(4)}, ${point.lon.toFixed(4)}`;
-      document.getElementById('map-overlay').style.display = 'block';
-      document.getElementById('map-empty').style.display   = 'none';
+      redrawMap();
       reverseGeocode(point.lat, point.lon);
     },
     onError: msg => ui.toast(msg, 'error'),
   });
 
-  // ── Câmera ────────────────────────────────
+  // ── Câmera ───────────────────────────────────
   cam = new CameraManager({
-    // PROBLEMA 3: onStart aceita terceiro parâmetro `silent`
-    // quando silent=true é uma reconexão automática após tela apagar —
-    // só atualiza a stream no vídeo e reinicia o WebRTC, sem mexer na UI
     onStart: (stream, mode, silent = false) => {
       if (mode === 'camera') {
         const video = document.getElementById('cam-video');
-        video.srcObject = stream;  // sempre atualiza (reconexão inclusa)
+        video.srcObject = stream;
         video.style.display = 'block';
-
         if (!silent) {
-          // primeira ativação: atualiza UI completa
           document.getElementById('cam-placeholder').style.display = 'none';
           document.getElementById('cam-live-badge').style.display  = 'flex';
           document.getElementById('btn-cam-start').style.display   = 'none';
@@ -415,9 +430,7 @@ function init() {
           document.getElementById('cam-chip').className   = 'chip chip-green';
           document.getElementById('stat-cam').textContent = 'On';
         }
-        // sempre reinicia o WebRTC com a nova stream (reconexão inclusa)
         initWebRTC(stream);
-
       } else if (mode === 'mic') {
         if (!silent) {
           document.getElementById('mic-status').style.display = 'flex';
@@ -463,7 +476,7 @@ function init() {
   });
   cam.listenForCommands();
 
-  // ── WebRTC ────────────────────────────────
+  // ── WebRTC ───────────────────────────────────
   function setRTC(state) {
     const m = {
       inactive:     ['', 'inativa'],
@@ -487,7 +500,7 @@ function init() {
     await rtc.connect(stream);
   }
 
-  // ── Gravação ──────────────────────────────
+  // ── Gravação ─────────────────────────────────
   function startRecording() {
     const stream = cam.camStream || cam.micStream;
     if (!stream) return;
@@ -496,11 +509,10 @@ function init() {
     recorder.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
     recorder.onstop = () => {
       const blob = new Blob(recChunks, { type: 'video/webm' });
-      const a = Object.assign(document.createElement('a'), {
+      Object.assign(document.createElement('a'), {
         href: URL.createObjectURL(blob),
         download: `sentinel-rec-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.webm`,
-      });
-      a.click();
+      }).click();
       ui.toast('Gravação salva', 'success');
     };
     recorder.start();
@@ -515,8 +527,7 @@ function init() {
 
   function stopRecording() {
     if (!recorder || recorder.state === 'inactive') return;
-    recorder.stop();
-    recorder = null;
+    recorder.stop(); recorder = null;
     document.getElementById('rec-badge').style.display = 'none';
     document.getElementById('btn-rec').title = 'Gravar';
     document.getElementById('btn-rec').innerHTML = `
@@ -530,42 +541,36 @@ function init() {
     else startRecording();
   });
 
-  // ── Pausar/retomar monitoramento ──────────
+  // ── Pausar/retomar ────────────────────────────
   document.getElementById('btn-monitor-toggle').addEventListener('click', () => {
     monitoring = !monitoring;
     const icon  = document.getElementById('monitor-icon');
     const label = document.getElementById('monitor-label');
     const pill  = document.getElementById('status-pill');
     if (monitoring) {
-      gps.start();
-      cam.listenForCommands();
-      label.textContent = 'Pausar';
-      pill.textContent  = 'Ativo';
+      gps.start(); cam.listenForCommands();
+      label.textContent = 'Pausar'; pill.textContent = 'Ativo';
       pill.style.background = '';
       icon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
       ui.toast('Monitoramento retomado', 'success');
     } else {
-      gps.stop();
-      cam.stopListening();
-      label.textContent = 'Retomar';
-      pill.textContent  = 'Pausado';
+      gps.stop(); cam.stopListening();
+      label.textContent = 'Retomar'; pill.textContent = 'Pausado';
       pill.style.background = 'rgba(220,38,38,.08)';
       icon.innerHTML = '<polygon points="5,3 19,12 5,21 5,3"/>';
       ui.toast('Monitoramento pausado', 'info');
     }
   });
 
-  // ── Toggle rastro ─────────────────────────
+  // ── Toggle rastro ─────────────────────────────
   document.getElementById('btn-trail-toggle').addEventListener('click', () => {
     showTrail = !showTrail;
-    document.getElementById('btn-trail-toggle').textContent = showTrail ? 'Com rastro' : 'Só posição';
-    if (gps.points.length) {
-      const pts = showTrail ? gps.points : [gps.lastPoint];
-      ui.drawMap('map-canvas', pts);
-    }
+    syncTrailButton();
+    redrawMap();
+    ui.toast(showTrail ? 'Rastro ativado' : 'Mostrando só posição atual', 'info');
   });
 
-  // ── Atualizar GPS ─────────────────────────
+  // ── Atualizar GPS manualmente ─────────────────
   document.getElementById('btn-refresh-gps').addEventListener('click', () => {
     if (!navigator.geolocation) return;
     ui.toast('Atualizando posição…', 'info');
@@ -575,8 +580,7 @@ function init() {
         const point = { lat, lon, acc, t: Date.now() };
         gps.points.push(point);
         ui.setCoords(point);
-        const pts = showTrail ? gps.points : [point];
-        ui.drawMap('map-canvas', pts);
+        redrawMap();
         reverseGeocode(lat, lon);
         ui.toast('Posição atualizada', 'success');
       },
@@ -585,68 +589,40 @@ function init() {
     );
   });
 
-  // ── Câmera botões ─────────────────────────
+  // ── Câmera botões ─────────────────────────────
   document.getElementById('btn-cam-start').addEventListener('click', () => cam.startCamera());
   document.getElementById('btn-cam-stop').addEventListener('click',  () => cam.stopCamera());
   document.getElementById('btn-cam-flip').addEventListener('click',  () => cam.flip());
 
-  // ── PROBLEMA 2: fullscreen com suporte a iOS e fallback CSS ──
-  // Tenta na ordem:
-  //   1. webkitEnterFullscreen no <video>  → iOS Safari
-  //   2. requestFullscreen no cam-wrap     → padrão W3C
-  //   3. overlay CSS manual               → último recurso
+  // ── Fullscreen ────────────────────────────────
   document.getElementById('btn-fullscreen').addEventListener('click', () => {
     const video = document.getElementById('cam-video');
     const wrap  = document.getElementById('cam-wrap');
 
-    // iOS Safari: fullscreen nativo no elemento <video>
     if (typeof video.webkitEnterFullscreen === 'function') {
-      video.webkitEnterFullscreen();
-      return;
+      video.webkitEnterFullscreen(); return;
     }
+    const reqFS = wrap.requestFullscreen || wrap.webkitRequestFullscreen
+      || wrap.mozRequestFullScreen || wrap.msRequestFullscreen;
+    if (reqFS) { reqFS.call(wrap); return; }
 
-    // W3C padrão: fullscreen no container
-    const reqFS = wrap.requestFullscreen
-      || wrap.webkitRequestFullscreen
-      || wrap.mozRequestFullScreen
-      || wrap.msRequestFullscreen;
-
-    if (reqFS) {
-      reqFS.call(wrap);
-      return;
-    }
-
-    // Fallback CSS: overlay que cobre a tela toda
-    // (Samsung Browser antigo, browsers que não suportam fullscreen API)
-    const overlay = document.createElement('div');
+    // Fallback CSS overlay
+    const overlay  = document.createElement('div');
     overlay.className = 'cam-fullscreen-overlay';
-
-    // Cria um novo <video> apontando para a mesma stream
-    // (não move o original para não quebrar o WebRTC)
     const tmpVideo = document.createElement('video');
     tmpVideo.srcObject = video.srcObject;
-    tmpVideo.autoplay  = true;
-    tmpVideo.muted     = true;
-    tmpVideo.playsInline = true;
-    tmpVideo.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#000';
-
+    tmpVideo.autoplay = true; tmpVideo.muted = true; tmpVideo.playsInline = true;
     const closeBtn = document.createElement('button');
     closeBtn.className = 'cam-fullscreen-close';
     closeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
-
-    overlay.appendChild(tmpVideo);
-    overlay.appendChild(closeBtn);
+    overlay.appendChild(tmpVideo); overlay.appendChild(closeBtn);
     document.body.appendChild(overlay);
-
-    const closeOverlay = () => {
-      tmpVideo.srcObject = null;
-      overlay.remove();
-    };
+    const closeOverlay = () => { tmpVideo.srcObject = null; overlay.remove(); };
     closeBtn.addEventListener('click', closeOverlay);
     overlay.addEventListener('click', e => { if (e.target === overlay) closeOverlay(); });
   });
 
-  // Config
+  // ── Config ────────────────────────────────────
   document.getElementById('sw-rear').addEventListener('click', function() {
     this.classList.toggle('on'); cam.flip();
   });
@@ -659,22 +635,19 @@ function init() {
     ui.toast('Histórico limpo', 'success');
   });
 
-  // Tabs
+  // ── Tabs ──────────────────────────────────────
   document.querySelectorAll('.nav-tab').forEach(tab =>
     tab.addEventListener('click', () => ui.switchTab(tab.dataset.tab)));
 
-  window.addEventListener('resize', () => {
-    if (gps.points.length) {
-      const pts = showTrail ? gps.points : [gps.lastPoint];
-      ui.drawMap('map-canvas', pts);
-    }
-  });
+  window.addEventListener('resize', () => redrawMap());
 
+  // ── Boot ──────────────────────────────────────
+  syncTrailButton(); // estado visual correto desde o início
   gps.start();
   ui.setTrackingActive(true);
 }
 
-// ── Geocodificação reversa ─────────────────────
+// ── Geocodificação reversa ──────────────────────
 let geocodeTimer = null;
 async function reverseGeocode(lat, lon) {
   clearTimeout(geocodeTimer);
