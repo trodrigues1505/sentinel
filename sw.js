@@ -6,7 +6,7 @@
 // Quando atualizar o app, bumpe este valor.
 // O index.html tem APP_VERSION com o mesmo valor.
 // Se divergirem, o banner de atualização aparece.
-const SW_VERSION = '1.0.0';
+const SW_VERSION = '1.0.1';
 const CACHE_NAME = `sentinel-${SW_VERSION}`;
 
 const STATIC_ASSETS = [
