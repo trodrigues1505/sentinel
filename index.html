@@ -62,54 +62,35 @@
 /* ── Banner de atualização ── */
 #update-banner {
   position: fixed;
-  /* fica logo acima da bottomnav (56px) + safe area + folga */
   bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 10px);
   left: 12px; right: 12px;
   background: var(--s1, #fff);
   border: 1px solid var(--b1, #e5e7eb);
   border-radius: 14px;
   padding: 12px 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: flex; align-items: center; gap: 10px;
   box-shadow: 0 8px 32px rgba(0,0,0,.12);
   z-index: 8888;
-  /* começa invisível e deslocado para baixo */
   transform: translateY(16px);
-  opacity: 0;
-  pointer-events: none;
+  opacity: 0; pointer-events: none;
   transition: transform 300ms cubic-bezier(.34,1.56,.64,1), opacity 220ms ease;
 }
-#update-banner.visible {
-  transform: translateY(0);
-  opacity: 1;
-  pointer-events: all;
-}
+#update-banner.visible { transform: translateY(0); opacity: 1; pointer-events: all; }
 .update-banner-icon {
   width: 34px; height: 34px; border-radius: 10px;
-  background: rgba(59,130,246,.1);
-  color: #3b82f6;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
+  background: rgba(59,130,246,.1); color: #3b82f6;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .update-banner-text { flex: 1; min-width: 0; }
-.update-banner-title {
-  font-size: 13px; font-weight: 600;
-  color: var(--t1, #111); line-height: 1.3;
-}
-.update-banner-sub {
-  font-size: 11px; color: var(--t3, #9ca3af); margin-top: 1px;
-}
+.update-banner-title { font-size: 13px; font-weight: 600; color: var(--t1, #111); line-height: 1.3; }
+.update-banner-sub   { font-size: 11px; color: var(--t3, #9ca3af); margin-top: 1px; }
 #btn-update-now {
-  flex-shrink: 0;
-  height: 32px; padding: 0 12px;
+  flex-shrink: 0; height: 32px; padding: 0 12px;
   font-size: 12px; font-weight: 600;
   background: #3b82f6; color: #fff;
-  border: none; border-radius: 8px;
-  cursor: pointer;
+  border: none; border-radius: 8px; cursor: pointer;
   display: flex; align-items: center; gap: 5px;
-  transition: background 150ms;
-  white-space: nowrap;
+  transition: background 150ms; white-space: nowrap;
 }
 #btn-update-now:hover  { background: #2563eb; }
 #btn-update-now:active { background: #1d4ed8; }
@@ -342,7 +323,6 @@
         <div style="display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;justify-content:space-between">
             <span style="font-size:13px;color:var(--t2)">Versão</span>
-            <!-- exibe APP_VERSION dinamicamente -->
             <span style="font-size:13px;font-weight:600" id="app-version-label">—</span>
           </div>
           <div style="display:flex;justify-content:space-between">
@@ -374,7 +354,7 @@
 
 </div>
 
-<!-- Banner de atualização — aparece quando SW_VERSION !== APP_VERSION -->
+<!-- Banner de atualização -->
 <div id="update-banner">
   <div class="update-banner-icon">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -408,36 +388,42 @@ import { UIController }  from './js/ui.js';
 
 // ─────────────────────────────────────────────
 //  VERSÃO — deve ser igual a SW_VERSION no sw.js
-//  Para atualizar: bumpe os dois para o mesmo valor.
 // ─────────────────────────────────────────────
 const APP_VERSION = '1.0.0';
-
-// Exibe versão na aba Config
 document.getElementById('app-version-label').textContent = APP_VERSION;
 
-// ── Service Worker + checagem de versão ───────
-async function checkSWVersion(reg) {
-  const sw = reg.active ?? reg.waiting ?? reg.installing;
-  if (!sw) return;
+// ── Checagem de versão ────────────────────────
+// Usa serviceWorker.ready para garantir que o SW está
+// ativo antes de mandar GET_VERSION — resolve o bug
+// onde reg.active era null na primeira carga.
+async function checkSWVersion() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sw  = reg.active;
+    if (!sw) return;
 
-  const swVersion = await new Promise(resolve => {
-    const handler = e => {
-      if (e.data?.type === 'SW_VERSION') {
+    const swVersion = await new Promise(resolve => {
+      const handler = e => {
+        if (e.data?.type === 'SW_VERSION') {
+          navigator.serviceWorker.removeEventListener('message', handler);
+          resolve(e.data.version);
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handler);
+      sw.postMessage({ type: 'GET_VERSION' });
+      // timeout: SW antigo pode não ter GET_VERSION implementado
+      setTimeout(() => {
         navigator.serviceWorker.removeEventListener('message', handler);
-        resolve(e.data.version);
-      }
-    };
-    navigator.serviceWorker.addEventListener('message', handler);
-    sw.postMessage({ type: 'GET_VERSION' });
-    // timeout de segurança: SW pode não estar pronto ainda
-    setTimeout(() => {
-      navigator.serviceWorker.removeEventListener('message', handler);
-      resolve(null);
-    }, 3_000);
-  });
+        resolve(null);
+      }, 3_000);
+    });
 
-  if (swVersion && swVersion !== APP_VERSION) {
-    showUpdateBanner(swVersion);
+    if (swVersion && swVersion !== APP_VERSION) {
+      showUpdateBanner(swVersion);
+    }
+  } catch (e) {
+    console.warn('[SW] checkSWVersion falhou:', e);
   }
 }
 
@@ -447,58 +433,59 @@ function showUpdateBanner(swVersion) {
   document.getElementById('update-banner').classList.add('visible');
 }
 
-// Botão Atualizar: limpa tudo e recarrega
-document.getElementById('btn-update-now').addEventListener('click', async () => {
-  const btn = document.getElementById('btn-update-now');
-  btn.classList.add('loading');
-  btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10"/></svg> Limpando…`;
-
+// ── Limpeza e reload ──────────────────────────
+// O que NÃO limpamos:
+//   - localStorage: contém sentinel_setup_done e sentinel_device_names
+//     que precisam sobreviver à atualização. Limpar o localStorage
+//     causa o bug de cair na tela de setup após o reload.
+//
+// O que SIM limpamos:
+//   - Caches do SW: força o browser a baixar os arquivos novos
+//   - Service Workers: garante que o novo SW tome controle imediato
+//   - sessionStorage: dados temporários de sessão (seguro limpar)
+//   - IndexedDB sentinel-db: fila offline de GPS (recriada automaticamente)
+async function runUpdateAndReload(btnEl) {
+  if (btnEl) {
+    btnEl.classList.add('loading');
+    btnEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10"/></svg> Limpando…`;
+  }
   try {
-    // 1. Apaga todos os caches do SW
+    // 1. Apaga caches do SW (força download dos arquivos atualizados)
     const keys = await caches.keys();
     await Promise.all(keys.map(k => caches.delete(k)));
 
-    // 2. Desregistra todos os service workers
+    // 2. Desregistra SW (o novo registra no próximo load)
     const regs = await navigator.serviceWorker.getRegistrations();
     await Promise.all(regs.map(r => r.unregister()));
 
-    // 3. Limpa storages
-    localStorage.clear();
+    // 3. Limpa sessionStorage (dados temporários — seguro)
     sessionStorage.clear();
 
-    // 4. Apaga o IndexedDB
+    // 4. Apaga IndexedDB de GPS offline (recriado automaticamente)
     await new Promise((res, rej) => {
       const req = indexedDB.deleteDatabase('sentinel-db');
-      req.onsuccess = res;
-      req.onerror   = rej;
-      req.onblocked = res; // continua mesmo bloqueado
+      req.onsuccess = res; req.onerror = rej; req.onblocked = res;
     });
+
+    // NÃO limpa localStorage — sentinel_setup_done e sentinel_device_names
+    // precisam sobreviver para não cair na tela de setup após o reload.
+
   } catch (e) {
     console.warn('[Update] Erro na limpeza:', e);
   }
 
-  // 5. Recarrega forçando bypass de cache
   window.location.reload(true);
-});
+}
 
-// Registra o SW e faz a primeira checagem
+document.getElementById('btn-update-now').addEventListener('click', () =>
+  runUpdateAndReload(document.getElementById('btn-update-now'))
+);
+
+// Registra SW e checa versão
 if ('serviceWorker' in navigator) {
-  const reg = await navigator.serviceWorker.register('sw.js').catch(() => null);
-  if (reg) {
-    // Checagem inicial
-    await checkSWVersion(reg);
-
-    // Quando um novo SW for instalado enquanto o app está aberto
-    reg.addEventListener('updatefound', () => {
-      const newSW = reg.installing;
-      newSW?.addEventListener('statechange', () => {
-        if (newSW.state === 'installed') checkSWVersion(reg);
-      });
-    });
-
-    // Re-checa a cada 5 minutos (capta deploy em produção)
-    setInterval(() => reg.update().then(() => checkSWVersion(reg)), 5 * 60_000);
-  }
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+  checkSWVersion();
+  setInterval(checkSWVersion, 5 * 60_000);
 }
 
 // ─────────────────────────────────────────────
@@ -563,7 +550,6 @@ function syncTrailButton() {
 function init() {
   document.getElementById('device-id-label').textContent = CONFIG.deviceId.slice(0, 8) + '…';
 
-  // ── GPS ─────────────────────────────────────
   gps = new GPSTracker({
     onUpdate: point => {
       ui.setGPSCount(gps.points.length);
@@ -575,13 +561,11 @@ function init() {
     onError: msg => ui.toast(msg, 'error'),
   });
 
-  // ── Câmera ───────────────────────────────────
   cam = new CameraManager({
     onStart: (stream, mode, silent = false) => {
       if (mode === 'camera') {
         const video = document.getElementById('cam-video');
-        video.srcObject = stream;
-        video.style.display = 'block';
+        video.srcObject = stream; video.style.display = 'block';
         if (!silent) {
           document.getElementById('cam-placeholder').style.display = 'none';
           document.getElementById('cam-live-badge').style.display  = 'flex';
@@ -640,15 +624,8 @@ function init() {
   });
   cam.listenForCommands();
 
-  // ── WebRTC ───────────────────────────────────
   function setRTC(state) {
-    const m = {
-      inactive:     ['', 'inativa'],
-      connecting:   ['connecting', 'conectando…'],
-      connected:    ['connected', 'transmitindo'],
-      disconnected: ['', 'desconectado'],
-      failed:       ['failed', 'falhou'],
-    };
+    const m = { inactive:['','inativa'], connecting:['connecting','conectando…'], connected:['connected','transmitindo'], disconnected:['','desconectado'], failed:['failed','falhou'] };
     const [cls, txt] = m[state] ?? ['', state];
     document.getElementById('rtc-dot').className     = `rtc-dot ${cls}`;
     document.getElementById('rtc-label').textContent = txt;
@@ -656,15 +633,11 @@ function init() {
 
   async function initWebRTC(stream) {
     await WebRTCManager.clearSignals();
-    rtc = new WebRTCManager('caller', {
-      onStatus: s => setRTC(s),
-      onError:  m => ui.toast(m, 'error'),
-    });
+    rtc = new WebRTCManager('caller', { onStatus: s => setRTC(s), onError: m => ui.toast(m, 'error') });
     setRTC('connecting');
     await rtc.connect(stream);
   }
 
-  // ── Gravação ─────────────────────────────────
   function startRecording() {
     const stream = cam.camStream || cam.micStream;
     if (!stream) return;
@@ -672,9 +645,8 @@ function init() {
     recorder  = new MediaRecorder(stream);
     recorder.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
     recorder.onstop = () => {
-      const blob = new Blob(recChunks, { type: 'video/webm' });
       Object.assign(document.createElement('a'), {
-        href: URL.createObjectURL(blob),
+        href: URL.createObjectURL(new Blob(recChunks, { type: 'video/webm' })),
         download: `sentinel-rec-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.webm`,
       }).click();
       ui.toast('Gravação salva', 'success');
@@ -682,10 +654,7 @@ function init() {
     recorder.start();
     document.getElementById('rec-badge').style.display = 'flex';
     document.getElementById('btn-rec').title = 'Parar gravação';
-    document.getElementById('btn-rec').innerHTML = `
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="6" y="6" width="12" height="12" fill="var(--red)" stroke="var(--red)"/>
-      </svg>`;
+    document.getElementById('btn-rec').innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" fill="var(--red)" stroke="var(--red)"/></svg>`;
     ui.toast('Gravando…', 'info');
   }
 
@@ -694,18 +663,13 @@ function init() {
     recorder.stop(); recorder = null;
     document.getElementById('rec-badge').style.display = 'none';
     document.getElementById('btn-rec').title = 'Gravar';
-    document.getElementById('btn-rec').innerHTML = `
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="8" fill="var(--red)" stroke="var(--red)"/>
-      </svg>`;
+    document.getElementById('btn-rec').innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8" fill="var(--red)" stroke="var(--red)"/></svg>`;
   }
 
   document.getElementById('btn-rec').addEventListener('click', () => {
-    if (recorder && recorder.state === 'recording') stopRecording();
-    else startRecording();
+    if (recorder && recorder.state === 'recording') stopRecording(); else startRecording();
   });
 
-  // ── Pausar/retomar ────────────────────────────
   document.getElementById('btn-monitor-toggle').addEventListener('click', () => {
     monitoring = !monitoring;
     const icon  = document.getElementById('monitor-icon');
@@ -713,28 +677,22 @@ function init() {
     const pill  = document.getElementById('status-pill');
     if (monitoring) {
       gps.start(); cam.listenForCommands();
-      label.textContent = 'Pausar'; pill.textContent = 'Ativo';
-      pill.style.background = '';
+      label.textContent = 'Pausar'; pill.textContent = 'Ativo'; pill.style.background = '';
       icon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
       ui.toast('Monitoramento retomado', 'success');
     } else {
       gps.stop(); cam.stopListening();
-      label.textContent = 'Retomar'; pill.textContent = 'Pausado';
-      pill.style.background = 'rgba(220,38,38,.08)';
+      label.textContent = 'Retomar'; pill.textContent = 'Pausado'; pill.style.background = 'rgba(220,38,38,.08)';
       icon.innerHTML = '<polygon points="5,3 19,12 5,21 5,3"/>';
       ui.toast('Monitoramento pausado', 'info');
     }
   });
 
-  // ── Toggle rastro ─────────────────────────────
   document.getElementById('btn-trail-toggle').addEventListener('click', () => {
-    showTrail = !showTrail;
-    syncTrailButton();
-    redrawMap();
+    showTrail = !showTrail; syncTrailButton(); redrawMap();
     ui.toast(showTrail ? 'Rastro ativado' : 'Mostrando só posição atual', 'info');
   });
 
-  // ── Atualizar GPS manualmente ─────────────────
   document.getElementById('btn-refresh-gps').addEventListener('click', () => {
     if (!navigator.geolocation) return;
     ui.toast('Atualizando posição…', 'info');
@@ -742,10 +700,7 @@ function init() {
       pos => {
         const { latitude: lat, longitude: lon, accuracy: acc } = pos.coords;
         const point = { lat, lon, acc, t: Date.now() };
-        gps.points.push(point);
-        ui.setCoords(point);
-        redrawMap();
-        reverseGeocode(lat, lon);
+        gps.points.push(point); ui.setCoords(point); redrawMap(); reverseGeocode(lat, lon);
         ui.toast('Posição atualizada', 'success');
       },
       () => ui.toast('Erro ao obter posição', 'error'),
@@ -753,56 +708,42 @@ function init() {
     );
   });
 
-  // ── Câmera botões ─────────────────────────────
   document.getElementById('btn-cam-start').addEventListener('click', () => cam.startCamera());
   document.getElementById('btn-cam-stop').addEventListener('click',  () => cam.stopCamera());
   document.getElementById('btn-cam-flip').addEventListener('click',  () => cam.flip());
 
-  // ── Fullscreen ────────────────────────────────
   document.getElementById('btn-fullscreen').addEventListener('click', () => {
     const video = document.getElementById('cam-video');
     const wrap  = document.getElementById('cam-wrap');
-    if (typeof video.webkitEnterFullscreen === 'function') {
-      video.webkitEnterFullscreen(); return;
-    }
-    const reqFS = wrap.requestFullscreen || wrap.webkitRequestFullscreen
-      || wrap.mozRequestFullScreen || wrap.msRequestFullscreen;
+    if (typeof video.webkitEnterFullscreen === 'function') { video.webkitEnterFullscreen(); return; }
+    const reqFS = wrap.requestFullscreen || wrap.webkitRequestFullscreen || wrap.mozRequestFullScreen || wrap.msRequestFullscreen;
     if (reqFS) { reqFS.call(wrap); return; }
-    const overlay  = document.createElement('div');
+    const overlay = document.createElement('div');
     overlay.className = 'cam-fullscreen-overlay';
     const tmpVideo = document.createElement('video');
-    tmpVideo.srcObject = video.srcObject;
-    tmpVideo.autoplay = true; tmpVideo.muted = true; tmpVideo.playsInline = true;
+    tmpVideo.srcObject = video.srcObject; tmpVideo.autoplay = true; tmpVideo.muted = true; tmpVideo.playsInline = true;
     const closeBtn = document.createElement('button');
     closeBtn.className = 'cam-fullscreen-close';
     closeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
-    overlay.appendChild(tmpVideo); overlay.appendChild(closeBtn);
-    document.body.appendChild(overlay);
+    overlay.appendChild(tmpVideo); overlay.appendChild(closeBtn); document.body.appendChild(overlay);
     const closeOverlay = () => { tmpVideo.srcObject = null; overlay.remove(); };
     closeBtn.addEventListener('click', closeOverlay);
     overlay.addEventListener('click', e => { if (e.target === overlay) closeOverlay(); });
   });
 
-  // ── Config ────────────────────────────────────
-  document.getElementById('sw-rear').addEventListener('click', function() {
-    this.classList.toggle('on'); cam.flip();
-  });
+  document.getElementById('sw-rear').addEventListener('click', function() { this.classList.toggle('on'); cam.flip(); });
   document.getElementById('btn-export-cfg').addEventListener('click', () => {
-    if (!gps.exportCSV()) ui.toast('Nenhum ponto para exportar', 'error');
-    else ui.toast('CSV exportado', 'success');
+    if (!gps.exportCSV()) ui.toast('Nenhum ponto para exportar', 'error'); else ui.toast('CSV exportado', 'success');
   });
   document.getElementById('btn-clear').addEventListener('click', () => {
-    gps.clearHistory(); ui.clearHistoryUI(); ui.setGPSCount(0);
-    ui.toast('Histórico limpo', 'success');
+    gps.clearHistory(); ui.clearHistoryUI(); ui.setGPSCount(0); ui.toast('Histórico limpo', 'success');
   });
 
-  // ── Tabs ──────────────────────────────────────
   document.querySelectorAll('.nav-tab').forEach(tab =>
     tab.addEventListener('click', () => ui.switchTab(tab.dataset.tab)));
 
   window.addEventListener('resize', () => redrawMap());
 
-  // ── Boot ──────────────────────────────────────
   syncTrailButton();
   gps.start();
   ui.setTrackingActive(true);
@@ -821,15 +762,11 @@ async function reverseGeocode(lat, lon) {
       const data = await res.json();
       const a = data.address ?? {};
       const parts = [
-        a.road || a.pedestrian || a.footway,
-        a.house_number,
+        a.road || a.pedestrian || a.footway, a.house_number,
         a.suburb || a.neighbourhood || a.quarter,
-        a.city || a.town || a.village || a.municipality,
-        a.state,
+        a.city || a.town || a.village || a.municipality, a.state,
       ].filter(Boolean);
-      const addr = parts.length
-        ? parts.join(', ')
-        : data.display_name?.split(',').slice(0,3).join(',') ?? '—';
+      const addr = parts.length ? parts.join(', ') : data.display_name?.split(',').slice(0,3).join(',') ?? '—';
       document.getElementById('address-display').textContent = addr;
     } catch {
       document.getElementById('address-display').textContent = 'Endereço indisponível';
