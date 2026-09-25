@@ -41,7 +41,7 @@
   cursor: pointer; backdrop-filter: blur(8px);
 }
 
-/* botão rastro — feedback visual de estado */
+/* botão rastro */
 #btn-trail-toggle {
   display: flex; align-items: center; gap: 5px;
   height: 30px; padding: 0 10px; font-size: 11px;
@@ -58,6 +58,62 @@
   color: var(--t2);
   border: 1px solid transparent;
 }
+
+/* ── Banner de atualização ── */
+#update-banner {
+  position: fixed;
+  /* fica logo acima da bottomnav (56px) + safe area + folga */
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 10px);
+  left: 12px; right: 12px;
+  background: var(--s1, #fff);
+  border: 1px solid var(--b1, #e5e7eb);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
+  z-index: 8888;
+  /* começa invisível e deslocado para baixo */
+  transform: translateY(16px);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 300ms cubic-bezier(.34,1.56,.64,1), opacity 220ms ease;
+}
+#update-banner.visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: all;
+}
+.update-banner-icon {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: rgba(59,130,246,.1);
+  color: #3b82f6;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.update-banner-text { flex: 1; min-width: 0; }
+.update-banner-title {
+  font-size: 13px; font-weight: 600;
+  color: var(--t1, #111); line-height: 1.3;
+}
+.update-banner-sub {
+  font-size: 11px; color: var(--t3, #9ca3af); margin-top: 1px;
+}
+#btn-update-now {
+  flex-shrink: 0;
+  height: 32px; padding: 0 12px;
+  font-size: 12px; font-weight: 600;
+  background: #3b82f6; color: #fff;
+  border: none; border-radius: 8px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 5px;
+  transition: background 150ms;
+  white-space: nowrap;
+}
+#btn-update-now:hover  { background: #2563eb; }
+#btn-update-now:active { background: #1d4ed8; }
+#btn-update-now.loading { opacity: .65; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -224,12 +280,6 @@
             Localização
           </div>
           <div style="display:flex;gap:6px;align-items:center">
-            <!--
-              Botão de rastro.
-              Estado inicial: showTrail=true → classe trail-on, texto "Rastro ativo".
-              Ao clicar: showTrail=false → classe trail-off, texto "Só posição".
-              A função syncTrailButton() mantém isso em sincronia.
-            -->
             <button class="btn btn-ghost trail-on" id="btn-trail-toggle" title="Alternar exibição do rastro">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3,17 9,11 13,15 21,7"/>
@@ -292,7 +342,8 @@
         <div style="display:flex;flex-direction:column;gap:10px">
           <div style="display:flex;justify-content:space-between">
             <span style="font-size:13px;color:var(--t2)">Versão</span>
-            <span style="font-size:13px;font-weight:600">1.0.0</span>
+            <!-- exibe APP_VERSION dinamicamente -->
+            <span style="font-size:13px;font-weight:600" id="app-version-label">—</span>
           </div>
           <div style="display:flex;justify-content:space-between">
             <span style="font-size:13px;color:var(--t2)">Device ID</span>
@@ -323,6 +374,29 @@
 
 </div>
 
+<!-- Banner de atualização — aparece quando SW_VERSION !== APP_VERSION -->
+<div id="update-banner">
+  <div class="update-banner-icon">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="23 4 23 10 17 10"/>
+      <polyline points="1 20 1 14 7 14"/>
+      <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+    </svg>
+  </div>
+  <div class="update-banner-text">
+    <div class="update-banner-title">Atualização disponível</div>
+    <div class="update-banner-sub" id="update-banner-sub">Nova versão pronta</div>
+  </div>
+  <button id="btn-update-now">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="23 4 23 10 17 10"/>
+      <polyline points="1 20 1 14 7 14"/>
+      <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+    </svg>
+    Atualizar
+  </button>
+</div>
+
 <div id="toast-container"></div>
 
 <script type="module">
@@ -332,7 +406,102 @@ import { CameraManager } from './js/camera.js';
 import { WebRTCManager } from './js/webrtc.js';
 import { UIController }  from './js/ui.js';
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+// ─────────────────────────────────────────────
+//  VERSÃO — deve ser igual a SW_VERSION no sw.js
+//  Para atualizar: bumpe os dois para o mesmo valor.
+// ─────────────────────────────────────────────
+const APP_VERSION = '1.0.0';
+
+// Exibe versão na aba Config
+document.getElementById('app-version-label').textContent = APP_VERSION;
+
+// ── Service Worker + checagem de versão ───────
+async function checkSWVersion(reg) {
+  const sw = reg.active ?? reg.waiting ?? reg.installing;
+  if (!sw) return;
+
+  const swVersion = await new Promise(resolve => {
+    const handler = e => {
+      if (e.data?.type === 'SW_VERSION') {
+        navigator.serviceWorker.removeEventListener('message', handler);
+        resolve(e.data.version);
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', handler);
+    sw.postMessage({ type: 'GET_VERSION' });
+    // timeout de segurança: SW pode não estar pronto ainda
+    setTimeout(() => {
+      navigator.serviceWorker.removeEventListener('message', handler);
+      resolve(null);
+    }, 3_000);
+  });
+
+  if (swVersion && swVersion !== APP_VERSION) {
+    showUpdateBanner(swVersion);
+  }
+}
+
+function showUpdateBanner(swVersion) {
+  const sub = document.getElementById('update-banner-sub');
+  if (sub) sub.textContent = `App ${APP_VERSION} · SW ${swVersion}`;
+  document.getElementById('update-banner').classList.add('visible');
+}
+
+// Botão Atualizar: limpa tudo e recarrega
+document.getElementById('btn-update-now').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-update-now');
+  btn.classList.add('loading');
+  btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10"/></svg> Limpando…`;
+
+  try {
+    // 1. Apaga todos os caches do SW
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+
+    // 2. Desregistra todos os service workers
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map(r => r.unregister()));
+
+    // 3. Limpa storages
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // 4. Apaga o IndexedDB
+    await new Promise((res, rej) => {
+      const req = indexedDB.deleteDatabase('sentinel-db');
+      req.onsuccess = res;
+      req.onerror   = rej;
+      req.onblocked = res; // continua mesmo bloqueado
+    });
+  } catch (e) {
+    console.warn('[Update] Erro na limpeza:', e);
+  }
+
+  // 5. Recarrega forçando bypass de cache
+  window.location.reload(true);
+});
+
+// Registra o SW e faz a primeira checagem
+if ('serviceWorker' in navigator) {
+  const reg = await navigator.serviceWorker.register('sw.js').catch(() => null);
+  if (reg) {
+    // Checagem inicial
+    await checkSWVersion(reg);
+
+    // Quando um novo SW for instalado enquanto o app está aberto
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      newSW?.addEventListener('statechange', () => {
+        if (newSW.state === 'installed') checkSWVersion(reg);
+      });
+    });
+
+    // Re-checa a cada 5 minutos (capta deploy em produção)
+    setInterval(() => reg.update().then(() => checkSWVersion(reg)), 5 * 60_000);
+  }
+}
+
+// ─────────────────────────────────────────────
 
 const ui = new UIController();
 let gps  = null, cam = null, rtc = null;
@@ -376,22 +545,17 @@ function showApp() {
 }
 
 // ── Helpers ────────────────────────────────────
-
-// Centraliza o redraw passando showTrail para ui.drawMap
 function redrawMap() {
   if (!gps?.points?.length) return;
   const pts = showTrail ? gps.points : [gps.lastPoint];
   ui.drawMap('map-canvas', pts, showTrail);
 }
 
-// Mantém o botão de rastro sincronizado com o estado showTrail
 function syncTrailButton() {
   const btn   = document.getElementById('btn-trail-toggle');
   const label = document.getElementById('trail-label');
   if (!btn || !label) return;
-  btn.className = showTrail
-    ? 'btn btn-ghost trail-on'
-    : 'btn btn-ghost trail-off';
+  btn.className     = showTrail ? 'btn btn-ghost trail-on' : 'btn btn-ghost trail-off';
   label.textContent = showTrail ? 'Rastro ativo' : 'Só posição';
 }
 
@@ -598,15 +762,12 @@ function init() {
   document.getElementById('btn-fullscreen').addEventListener('click', () => {
     const video = document.getElementById('cam-video');
     const wrap  = document.getElementById('cam-wrap');
-
     if (typeof video.webkitEnterFullscreen === 'function') {
       video.webkitEnterFullscreen(); return;
     }
     const reqFS = wrap.requestFullscreen || wrap.webkitRequestFullscreen
       || wrap.mozRequestFullScreen || wrap.msRequestFullscreen;
     if (reqFS) { reqFS.call(wrap); return; }
-
-    // Fallback CSS overlay
     const overlay  = document.createElement('div');
     overlay.className = 'cam-fullscreen-overlay';
     const tmpVideo = document.createElement('video');
@@ -642,7 +803,7 @@ function init() {
   window.addEventListener('resize', () => redrawMap());
 
   // ── Boot ──────────────────────────────────────
-  syncTrailButton(); // estado visual correto desde o início
+  syncTrailButton();
   gps.start();
   ui.setTrackingActive(true);
 }
