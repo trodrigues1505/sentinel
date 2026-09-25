@@ -12,6 +12,53 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="css/app.css">
 <title>&#x200B;</title>
+<style>
+/* ── PROBLEMA 1: câmera sem corte ── */
+/* object-fit:contain mostra o frame inteiro,
+   fundo preto preenche as faixas laterais    */
+#cam-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  display: none;
+}
+
+/* ── PROBLEMA 2: fullscreen overlay ── */
+/* Quando entramos em fullscreen via CSS fallback,
+   o vídeo cobre a tela toda                  */
+.cam-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cam-fullscreen-overlay video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.cam-fullscreen-close {
+  position: absolute;
+  top: env(safe-area-inset-top, 16px);
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.15);
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+</style>
 </head>
 <body>
 
@@ -71,7 +118,6 @@
       <span class="brand-name">Sentinel</span>
     </div>
     <div class="header-right">
-      <!-- Botão pausar/retomar monitoramento (item 6) -->
       <button class="btn btn-ghost" id="btn-monitor-toggle" style="height:32px;padding:0 12px;font-size:12px;gap:5px">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="monitor-icon">
           <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
@@ -113,7 +159,7 @@
         </div>
       </div>
 
-      <!-- CÂMERA — maior (item 1) -->
+      <!-- CÂMERA -->
       <div class="card">
         <div class="card-header">
           <div class="card-title">
@@ -124,7 +170,7 @@
           </div>
           <div style="display:flex;gap:6px;align-items:center">
             <span class="chip chip-gray" id="cam-chip">Inativa</span>
-            <!-- Fullscreen -->
+            <!-- PROBLEMA 2: botão fullscreen -->
             <button class="btn btn-ghost btn-icon" id="btn-fullscreen" title="Tela cheia" style="display:none;width:32px;height:32px">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="15,3 21,3 21,9"/><polyline points="9,21 3,21 3,15"/>
@@ -133,9 +179,11 @@
             </button>
           </div>
         </div>
-        <!-- Altura maior para câmera (item 1) -->
-        <div class="cam-wrap" style="height:280px" id="cam-wrap">
+
+        <!-- PROBLEMA 1: cam-wrap com fundo preto, vídeo usa object-fit:contain via CSS -->
+        <div class="cam-wrap" style="height:280px;background:#000" id="cam-wrap">
           <div class="cam-live-badge" id="cam-live-badge">AO VIVO</div>
+          <!-- #cam-video estilizado no <style> acima: object-fit:contain -->
           <video id="cam-video" autoplay muted playsinline></video>
           <div class="cam-placeholder" id="cam-placeholder">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -144,12 +192,12 @@
             <p>Câmera inativa</p>
             <span>Aguardando comando remoto</span>
           </div>
-          <!-- Indicador gravação (item 5) -->
           <div id="rec-badge" style="display:none;position:absolute;top:10px;right:10px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;align-items:center;gap:5px">
             <div style="width:6px;height:6px;border-radius:50%;background:#fff;animation:blink 1s infinite"></div>
             REC
           </div>
         </div>
+
         <div id="mic-status" style="display:none;align-items:center;gap:8px;padding:8px 16px;background:rgba(217,119,6,.06);border-top:1px solid rgba(217,119,6,.12)">
           <div style="width:7px;height:7px;border-radius:50%;background:var(--yellow);animation:pulse 1.5s infinite"></div>
           <span style="font-size:12px;font-weight:600;color:var(--yellow)">Microfone ativo</span>
@@ -163,7 +211,6 @@
               <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
             </svg>
           </button>
-          <!-- Botão gravar (item 5) -->
           <button class="btn btn-ghost btn-icon" id="btn-rec" style="display:none" title="Gravar">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="8" fill="var(--red)" stroke="var(--red)"/>
@@ -172,7 +219,7 @@
         </div>
       </div>
 
-      <!-- ENDEREÇO + GPS (item 3) -->
+      <!-- GPS -->
       <div class="card">
         <div class="card-header">
           <div class="card-title">
@@ -181,7 +228,6 @@
             </svg>
             Localização
           </div>
-          <!-- Botão atualizar (item 4) e toggle rastro (item 2) -->
           <div style="display:flex;gap:6px">
             <button class="btn btn-ghost" style="height:30px;padding:0 10px;font-size:11px" id="btn-trail-toggle">
               Com rastro
@@ -194,7 +240,6 @@
             </button>
           </div>
         </div>
-        <!-- Endereço legível (item 3) -->
         <div style="padding:12px 16px;border-bottom:1px solid var(--b1)">
           <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Endereço</div>
           <div style="font-size:13px;font-weight:500;color:var(--t1);line-height:1.4" id="address-display">Aguardando GPS…</div>
@@ -287,10 +332,10 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catc
 
 const ui = new UIController();
 let gps  = null, cam = null, rtc = null;
-let monitoring   = true;   // item 6
-let showTrail    = true;   // item 2
-let recorder     = null;   // item 5
-let recChunks    = [];
+let monitoring = true;
+let showTrail  = true;
+let recorder   = null;
+let recChunks  = [];
 
 // ── Setup ─────────────────────────────────────
 const SETUP_KEY = 'sentinel_setup_done';
@@ -330,44 +375,54 @@ function showApp() {
 function init() {
   document.getElementById('device-id-label').textContent = CONFIG.deviceId.slice(0, 8) + '…';
 
-  // ── GPS ────────────────────────────────────
+  // ── GPS ───────────────────────────────────
   gps = new GPSTracker({
     onUpdate: point => {
       ui.setGPSCount(gps.points.length);
       ui.setLastGPSTime(new Date(point.t));
       ui.setCoords(point);
-      // Mapa com ou sem rastro (item 2)
       const pts = showTrail ? gps.points : [point];
       ui.drawMap('map-canvas', pts);
       document.getElementById('map-coord').textContent = `${point.lat.toFixed(4)}, ${point.lon.toFixed(4)}`;
       document.getElementById('map-overlay').style.display = 'block';
       document.getElementById('map-empty').style.display   = 'none';
-      // Geocodificação reversa (item 3)
       reverseGeocode(point.lat, point.lon);
     },
     onError: msg => ui.toast(msg, 'error'),
   });
 
-  // ── Câmera ─────────────────────────────────
+  // ── Câmera ────────────────────────────────
   cam = new CameraManager({
-    onStart: (stream, mode) => {
+    // PROBLEMA 3: onStart aceita terceiro parâmetro `silent`
+    // quando silent=true é uma reconexão automática após tela apagar —
+    // só atualiza a stream no vídeo e reinicia o WebRTC, sem mexer na UI
+    onStart: (stream, mode, silent = false) => {
       if (mode === 'camera') {
         const video = document.getElementById('cam-video');
-        video.srcObject = stream; video.style.display = 'block';
-        document.getElementById('cam-placeholder').style.display = 'none';
-        document.getElementById('cam-live-badge').style.display  = 'flex';
-        document.getElementById('btn-cam-start').style.display   = 'none';
-        document.getElementById('btn-cam-stop').style.display    = 'flex';
-        document.getElementById('btn-cam-flip').style.display    = 'flex';
-        document.getElementById('btn-rec').style.display         = 'flex';
-        document.getElementById('btn-fullscreen').style.display  = 'flex';
-        document.getElementById('cam-chip').textContent  = 'Ao vivo';
-        document.getElementById('cam-chip').className   = 'chip chip-green';
-        document.getElementById('stat-cam').textContent = 'On';
+        video.srcObject = stream;  // sempre atualiza (reconexão inclusa)
+        video.style.display = 'block';
+
+        if (!silent) {
+          // primeira ativação: atualiza UI completa
+          document.getElementById('cam-placeholder').style.display = 'none';
+          document.getElementById('cam-live-badge').style.display  = 'flex';
+          document.getElementById('btn-cam-start').style.display   = 'none';
+          document.getElementById('btn-cam-stop').style.display    = 'flex';
+          document.getElementById('btn-cam-flip').style.display    = 'flex';
+          document.getElementById('btn-rec').style.display         = 'flex';
+          document.getElementById('btn-fullscreen').style.display  = 'flex';
+          document.getElementById('cam-chip').textContent  = 'Ao vivo';
+          document.getElementById('cam-chip').className   = 'chip chip-green';
+          document.getElementById('stat-cam').textContent = 'On';
+        }
+        // sempre reinicia o WebRTC com a nova stream (reconexão inclusa)
         initWebRTC(stream);
+
       } else if (mode === 'mic') {
-        document.getElementById('mic-status').style.display = 'flex';
-        document.getElementById('btn-rec').style.display    = 'flex';
+        if (!silent) {
+          document.getElementById('mic-status').style.display = 'flex';
+          document.getElementById('btn-rec').style.display    = 'flex';
+        }
         initWebRTC(stream);
       }
     },
@@ -408,11 +463,17 @@ function init() {
   });
   cam.listenForCommands();
 
-  // ── WebRTC ─────────────────────────────────
+  // ── WebRTC ────────────────────────────────
   function setRTC(state) {
-    const m = { inactive:['','inativa'], connecting:['connecting','conectando…'], connected:['connected','transmitindo'], disconnected:['','desconectado'], failed:['failed','falhou'] };
+    const m = {
+      inactive:     ['', 'inativa'],
+      connecting:   ['connecting', 'conectando…'],
+      connected:    ['connected', 'transmitindo'],
+      disconnected: ['', 'desconectado'],
+      failed:       ['failed', 'falhou'],
+    };
     const [cls, txt] = m[state] ?? ['', state];
-    document.getElementById('rtc-dot').className    = `rtc-dot ${cls}`;
+    document.getElementById('rtc-dot').className     = `rtc-dot ${cls}`;
     document.getElementById('rtc-label').textContent = txt;
   }
 
@@ -426,7 +487,7 @@ function init() {
     await rtc.connect(stream);
   }
 
-  // ── Gravação (item 5) ──────────────────────
+  // ── Gravação ──────────────────────────────
   function startRecording() {
     const stream = cam.camStream || cam.micStream;
     if (!stream) return;
@@ -469,13 +530,12 @@ function init() {
     else startRecording();
   });
 
-  // ── Pausar/retomar monitoramento (item 6) ──
+  // ── Pausar/retomar monitoramento ──────────
   document.getElementById('btn-monitor-toggle').addEventListener('click', () => {
     monitoring = !monitoring;
     const icon  = document.getElementById('monitor-icon');
     const label = document.getElementById('monitor-label');
     const pill  = document.getElementById('status-pill');
-
     if (monitoring) {
       gps.start();
       cam.listenForCommands();
@@ -495,7 +555,7 @@ function init() {
     }
   });
 
-  // ── Toggle rastro (item 2) ──────────────────
+  // ── Toggle rastro ─────────────────────────
   document.getElementById('btn-trail-toggle').addEventListener('click', () => {
     showTrail = !showTrail;
     document.getElementById('btn-trail-toggle').textContent = showTrail ? 'Com rastro' : 'Só posição';
@@ -505,7 +565,7 @@ function init() {
     }
   });
 
-  // ── Atualizar GPS (item 4) ──────────────────
+  // ── Atualizar GPS ─────────────────────────
   document.getElementById('btn-refresh-gps').addEventListener('click', () => {
     if (!navigator.geolocation) return;
     ui.toast('Atualizando posição…', 'info');
@@ -525,16 +585,65 @@ function init() {
     );
   });
 
-  // ── Câmera botões ───────────────────────────
+  // ── Câmera botões ─────────────────────────
   document.getElementById('btn-cam-start').addEventListener('click', () => cam.startCamera());
   document.getElementById('btn-cam-stop').addEventListener('click',  () => cam.stopCamera());
   document.getElementById('btn-cam-flip').addEventListener('click',  () => cam.flip());
 
-  // Fullscreen (item 1)
+  // ── PROBLEMA 2: fullscreen com suporte a iOS e fallback CSS ──
+  // Tenta na ordem:
+  //   1. webkitEnterFullscreen no <video>  → iOS Safari
+  //   2. requestFullscreen no cam-wrap     → padrão W3C
+  //   3. overlay CSS manual               → último recurso
   document.getElementById('btn-fullscreen').addEventListener('click', () => {
-    const wrap = document.getElementById('cam-wrap');
-    if (wrap.requestFullscreen) wrap.requestFullscreen();
-    else if (wrap.webkitRequestFullscreen) wrap.webkitRequestFullscreen();
+    const video = document.getElementById('cam-video');
+    const wrap  = document.getElementById('cam-wrap');
+
+    // iOS Safari: fullscreen nativo no elemento <video>
+    if (typeof video.webkitEnterFullscreen === 'function') {
+      video.webkitEnterFullscreen();
+      return;
+    }
+
+    // W3C padrão: fullscreen no container
+    const reqFS = wrap.requestFullscreen
+      || wrap.webkitRequestFullscreen
+      || wrap.mozRequestFullScreen
+      || wrap.msRequestFullscreen;
+
+    if (reqFS) {
+      reqFS.call(wrap);
+      return;
+    }
+
+    // Fallback CSS: overlay que cobre a tela toda
+    // (Samsung Browser antigo, browsers que não suportam fullscreen API)
+    const overlay = document.createElement('div');
+    overlay.className = 'cam-fullscreen-overlay';
+
+    // Cria um novo <video> apontando para a mesma stream
+    // (não move o original para não quebrar o WebRTC)
+    const tmpVideo = document.createElement('video');
+    tmpVideo.srcObject = video.srcObject;
+    tmpVideo.autoplay  = true;
+    tmpVideo.muted     = true;
+    tmpVideo.playsInline = true;
+    tmpVideo.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#000';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'cam-fullscreen-close';
+    closeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+
+    overlay.appendChild(tmpVideo);
+    overlay.appendChild(closeBtn);
+    document.body.appendChild(overlay);
+
+    const closeOverlay = () => {
+      tmpVideo.srcObject = null;
+      overlay.remove();
+    };
+    closeBtn.addEventListener('click', closeOverlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeOverlay(); });
   });
 
   // Config
@@ -561,16 +670,11 @@ function init() {
     }
   });
 
-  // Inicia GPS automático
-  startGPS();
-
-  function startGPS() {
-    gps.start();
-    ui.setTrackingActive(true);
-  }
+  gps.start();
+  ui.setTrackingActive(true);
 }
 
-// ── Geocodificação reversa (item 3) ────────────
+// ── Geocodificação reversa ─────────────────────
 let geocodeTimer = null;
 async function reverseGeocode(lat, lon) {
   clearTimeout(geocodeTimer);
@@ -589,12 +693,14 @@ async function reverseGeocode(lat, lon) {
         a.city || a.town || a.village || a.municipality,
         a.state,
       ].filter(Boolean);
-      const addr = parts.length ? parts.join(', ') : data.display_name?.split(',').slice(0,3).join(',') ?? '—';
+      const addr = parts.length
+        ? parts.join(', ')
+        : data.display_name?.split(',').slice(0,3).join(',') ?? '—';
       document.getElementById('address-display').textContent = addr;
     } catch {
       document.getElementById('address-display').textContent = 'Endereço indisponível';
     }
-  }, 2000); // throttle: só busca após 2s parado
+  }, 2000);
 }
 </script>
 </body>
