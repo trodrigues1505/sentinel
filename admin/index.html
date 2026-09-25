@@ -89,6 +89,7 @@
   border-radius: 0 2px 2px 0;
 }
 
+/* ── DEVICE ROW ── */
 .device-row {
   display: flex;
   align-items: center;
@@ -98,10 +99,21 @@
   background: var(--s2);
   border: 1px solid var(--b1);
   margin-top: 4px;
+  cursor: pointer;
+  transition: background 150ms ease;
 }
-.device-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--t3); flex-shrink: 0; }
+.device-row:hover { background: var(--s3, #f0f0f0); }
+.device-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--t3); flex-shrink: 0; transition: background 300ms ease; }
 .device-dot.on { background: var(--green); box-shadow: 0 0 5px rgba(22,163,74,.4); }
-.device-name  { font-size: 12px; font-weight: 500; color: var(--t2); flex: 1; }
+.device-name  { font-size: 12px; font-weight: 500; color: var(--t2); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.device-edit-btn {
+  width: 22px; height: 22px; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--t3); cursor: pointer; flex-shrink: 0;
+  transition: all 150ms ease; opacity: 0;
+}
+.device-row:hover .device-edit-btn { opacity: 1; }
+.device-edit-btn:hover { background: var(--b1); color: var(--t1); }
 
 /* ── VIEWS ── */
 .a-view { display: none; flex-direction: column; gap: 20px; }
@@ -138,10 +150,134 @@
   border-top: 1px solid var(--b1);
 }
 
-/* ── LEAFLET ── */
-.l-wrap {
-  overflow: hidden;
+/* ── STATUS PILL DINÂMICA ── */
+/* ITEM 3: pill agora reflete estado real */
+.status-pill-dynamic {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 300ms ease;
+  border: 1px solid transparent;
 }
+.status-pill-dynamic.state-active {
+  background: rgba(22,163,74,.08);
+  color: #16a34a;
+  border-color: rgba(22,163,74,.2);
+}
+.status-pill-dynamic.state-warning {
+  background: rgba(217,119,6,.08);
+  color: #d97706;
+  border-color: rgba(217,119,6,.2);
+}
+.status-pill-dynamic.state-offline {
+  background: rgba(220,38,38,.08);
+  color: #dc2626;
+  border-color: rgba(220,38,38,.2);
+}
+.status-pill-dynamic.state-live {
+  background: rgba(37,99,235,.08);
+  color: #2563eb;
+  border-color: rgba(37,99,235,.2);
+}
+.status-dot-dynamic {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.state-active  .status-dot-dynamic { background: #16a34a; animation: pulse 2s infinite; }
+.state-warning .status-dot-dynamic { background: #d97706; }
+.state-offline .status-dot-dynamic { background: #dc2626; }
+.state-live    .status-dot-dynamic { background: #2563eb; animation: pulse 1.5s infinite; }
+
+/* ── MODAL RENOMEAR DISPOSITIVO ── */
+/* ITEM 1: modal de nomeação */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.4);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999;
+  opacity: 0; pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal-box {
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  border-radius: 16px;
+  padding: 24px;
+  width: 360px;
+  max-width: calc(100vw - 48px);
+  box-shadow: 0 20px 60px rgba(0,0,0,.15);
+  transform: scale(.96) translateY(4px);
+  transition: transform 200ms ease;
+}
+.modal-overlay.open .modal-box { transform: scale(1) translateY(0); }
+
+.modal-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: var(--acc-bg);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+  color: var(--acc);
+}
+.modal-icon svg { width: 20px; height: 20px; }
+
+.modal-title {
+  font-size: 16px; font-weight: 700;
+  color: var(--t1); margin-bottom: 4px;
+}
+.modal-sub {
+  font-size: 12px; color: var(--t3);
+  margin-bottom: 20px; line-height: 1.5;
+  font-family: monospace;
+  background: var(--s2); padding: 6px 10px;
+  border-radius: 6px; border: 1px solid var(--b1);
+  word-break: break-all;
+}
+.modal-label {
+  font-size: 11px; font-weight: 600;
+  color: var(--t3); text-transform: uppercase;
+  letter-spacing: .06em; margin-bottom: 6px;
+}
+.modal-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--b1);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t1);
+  background: var(--bg);
+  outline: none;
+  transition: border-color 150ms ease;
+  box-sizing: border-box;
+}
+.modal-input:focus { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-bg); }
+.modal-input::placeholder { color: var(--t3); }
+
+.modal-actions {
+  display: flex; gap: 8px; margin-top: 20px;
+}
+.modal-actions .btn { flex: 1; height: 38px; font-size: 13px; }
+
+/* ── TOOLTIP no device ID ── */
+.device-id-short {
+  font-size: 10px;
+  color: var(--t3);
+  font-family: monospace;
+  margin-top: 1px;
+}
+
+/* ── LEAFLET ── */
+.l-wrap { overflow: hidden; }
 .l-wrap > div { height: 100%; width: 100%; }
 
 /* ── RESPONSIVE ── */
@@ -156,6 +292,25 @@
 </style>
 </head>
 <body>
+
+<!-- ── MODAL RENOMEAR DISPOSITIVO (Item 1) ── -->
+<div class="modal-overlay" id="modal-rename">
+  <div class="modal-box">
+    <div class="modal-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+      </svg>
+    </div>
+    <div class="modal-title">Nomear dispositivo</div>
+    <div class="modal-sub" id="modal-device-id-display">—</div>
+    <div class="modal-label">Nome do dispositivo</div>
+    <input class="modal-input" id="modal-input-name" type="text" placeholder="Ex: Espaço Autonomia, Celular Fabiana…" maxlength="40" autocomplete="off" />
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="modal-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="modal-save">Salvar nome</button>
+    </div>
+  </div>
+</div>
 
 <div class="admin-shell" id="app" style="display:none">
 
@@ -175,7 +330,11 @@
         <div class="rtc-dot" id="rtc-dot"></div>
         <span id="rtc-label">inativo</span>
       </div>
-      <div class="status-pill">Monitorando</div>
+      <!-- ITEM 3: pill dinâmica substituindo hardcoded "Monitorando" -->
+      <div class="status-pill-dynamic state-offline" id="status-pill-dynamic">
+        <div class="status-dot-dynamic"></div>
+        <span id="status-pill-text">Sem dados</span>
+      </div>
     </div>
   </header>
 
@@ -208,10 +367,10 @@
       Histórico
     </div>
 
+    <!-- ITEM 1: seção de dispositivos com nomes editáveis -->
     <div class="s-section" style="margin-top:auto">Dispositivos</div>
-    <div class="device-row">
-      <div class="device-dot" id="dot-client"></div>
-      <span class="device-name">Espaço Autonomia</span>
+    <div id="devices-list">
+      <!-- preenchido dinamicamente por renderDeviceList() -->
     </div>
 
     <div style="margin-top:12px">
@@ -318,7 +477,10 @@
           </div>
           <span style="font-size:12px;color:var(--t3);font-variant-numeric:tabular-nums" id="coord-display">—</span>
         </div>
-        <div style="padding:10px 16px;border-bottom:1px solid var(--b1);background:var(--s2)"><div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Endereço</div><div style="font-size:13px;font-weight:500;color:var(--t1)" id="admin-address">Aguardando posição…</div></div>
+        <div style="padding:10px 16px;border-bottom:1px solid var(--b1);background:var(--s2)">
+          <div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Endereço</div>
+          <div style="font-size:13px;font-weight:500;color:var(--t1)" id="admin-address">Aguardando posição…</div>
+        </div>
         <div class="l-wrap" style="height:280px">
           <div id="map-dash"></div>
         </div>
@@ -426,6 +588,112 @@ let rtc    = null;
 let gpsCache      = [];
 let clientDeviceId = null;
 
+// ────────────────────────────────────────────────────────
+// ITEM 1 — NOMES DE DISPOSITIVOS EM localStorage
+// Chave: 'sentinel_device_names' → { [device_id]: string }
+// ────────────────────────────────────────────────────────
+const NAMES_KEY = 'sentinel_device_names';
+
+function loadDeviceNames() {
+  try { return JSON.parse(localStorage.getItem(NAMES_KEY)) ?? {}; }
+  catch { return {}; }
+}
+
+function saveDeviceName(deviceId, name) {
+  const names = loadDeviceNames();
+  names[deviceId] = name.trim();
+  localStorage.setItem(NAMES_KEY, JSON.stringify(names));
+}
+
+function getDeviceName(deviceId) {
+  if (!deviceId) return 'Dispositivo';
+  const names = loadDeviceNames();
+  if (names[deviceId]) return names[deviceId];
+  // Fallback: primeiros 8 caracteres do ID
+  return deviceId.slice(0, 8) + '…';
+}
+
+// Renderiza a lista de dispositivos conhecidos na sidebar
+function renderDeviceList() {
+  const names = loadDeviceNames();
+  const list  = document.getElementById('devices-list');
+  list.innerHTML = '';
+
+  const knownIds = Object.keys(names);
+
+  // Se tiver o ID ativo mas não estiver nos nomes ainda, inclui
+  if (clientDeviceId && !names[clientDeviceId]) {
+    knownIds.push(clientDeviceId);
+  }
+
+  if (!knownIds.length) {
+    list.innerHTML = `<div style="padding:8px 10px;font-size:11px;color:var(--t3)">Nenhum dispositivo ainda</div>`;
+    return;
+  }
+
+  knownIds.forEach(id => {
+    const isActive = id === clientDeviceId;
+    const name = getDeviceName(id);
+    const row = document.createElement('div');
+    row.className = 'device-row';
+    row.dataset.deviceId = id;
+    row.innerHTML = `
+      <div class="device-dot ${isActive ? 'on' : ''}" id="dot-${id.slice(0,8)}"></div>
+      <div>
+        <div class="device-name">${name}</div>
+        <div class="device-id-short">${id.slice(0, 8)}…</div>
+      </div>
+      <div class="device-edit-btn" title="Renomear">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+      </div>
+    `;
+    row.querySelector('.device-edit-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openRenameModal(id);
+    });
+    row.addEventListener('click', () => openRenameModal(id));
+    list.appendChild(row);
+  });
+}
+
+// ── Modal de renomear ─────────────────────────
+let _renameTargetId = null;
+
+function openRenameModal(deviceId) {
+  _renameTargetId = deviceId;
+  document.getElementById('modal-device-id-display').textContent = deviceId;
+  document.getElementById('modal-input-name').value = loadDeviceNames()[deviceId] ?? '';
+  document.getElementById('modal-rename').classList.add('open');
+  setTimeout(() => document.getElementById('modal-input-name').focus(), 220);
+}
+
+function closeRenameModal() {
+  document.getElementById('modal-rename').classList.remove('open');
+  _renameTargetId = null;
+}
+
+document.getElementById('modal-cancel').addEventListener('click', closeRenameModal);
+document.getElementById('modal-rename').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeRenameModal();
+});
+
+document.getElementById('modal-save').addEventListener('click', () => {
+  const name = document.getElementById('modal-input-name').value.trim();
+  if (!name) { document.getElementById('modal-input-name').focus(); return; }
+  saveDeviceName(_renameTargetId, name);
+  closeRenameModal();
+  renderDeviceList();
+  ui.toast(`Dispositivo renomeado para "${name}"`, 'success');
+});
+
+document.getElementById('modal-input-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('modal-save').click();
+  if (e.key === 'Escape') closeRenameModal();
+});
+
 // ── Mapas Leaflet ────────────────────────────
 const ICON = L.divIcon({
   html: `<div style="width:14px;height:14px;border-radius:50%;background:#16a34a;border:2.5px solid #fff;box-shadow:0 0 0 4px rgba(22,163,74,.2)"></div>`,
@@ -433,8 +701,8 @@ const ICON = L.divIcon({
 });
 
 const CENTER = [-23.32, -46.72];
-const mapDash = L.map('map-dash', { zoomControl:true  }).setView(CENTER, 15);
-const mapGPS  = L.map('map-gps',  { zoomControl:true  }).setView(CENTER, 15);
+const mapDash = L.map('map-dash', { zoomControl:true }).setView(CENTER, 15);
+const mapGPS  = L.map('map-gps',  { zoomControl:true }).setView(CENTER, 15);
 const TILES   = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_OPT = { attribution:'© OpenStreetMap', maxZoom:19 };
 
@@ -455,6 +723,48 @@ function updateMaps(lat, lon) {
   pathGPS.setLatLngs(lls);
 }
 
+// ────────────────────────────────────────────────────────
+// ITEM 3 — STATUS PILL DINÂMICA
+// Estados baseados no tempo do último ponto GPS recebido
+// ────────────────────────────────────────────────────────
+let lastPointTimestamp = null; // ms
+
+function updateStatusPill() {
+  const pill  = document.getElementById('status-pill-dynamic');
+  const text  = document.getElementById('status-pill-text');
+
+  // Câmera ao vivo tem prioridade
+  const video = document.getElementById('admin-video');
+  if (video?.srcObject?.active) {
+    pill.className = 'status-pill-dynamic state-live';
+    text.textContent = 'Câmera ao vivo';
+    return;
+  }
+
+  if (!lastPointTimestamp) {
+    pill.className = 'status-pill-dynamic state-offline';
+    text.textContent = 'Sem dados';
+    return;
+  }
+
+  const ageMins = (Date.now() - lastPointTimestamp) / 60_000;
+
+  if (ageMins < 2) {
+    pill.className = 'status-pill-dynamic state-active';
+    text.textContent = 'Ativo';
+  } else if (ageMins < 10) {
+    const mins = Math.floor(ageMins);
+    pill.className = 'status-pill-dynamic state-warning';
+    text.textContent = `Sem sinal · ${mins}min`;
+  } else {
+    pill.className = 'status-pill-dynamic state-offline';
+    text.textContent = 'Offline';
+  }
+}
+
+// Reavalia o status a cada 30s (para "Sem sinal · Xmin" atualizar)
+setInterval(updateStatusPill, 30_000);
+
 // ── Device ID ────────────────────────────────
 async function getDeviceId() {
   if (clientDeviceId) return clientDeviceId;
@@ -462,7 +772,19 @@ async function getDeviceId() {
     .from('gps_points').select('device_id')
     .order('created_at', { ascending: false }).limit(1);
   clientDeviceId = data?.[0]?.device_id ?? null;
-  if (clientDeviceId) document.getElementById('dot-client').className = 'device-dot on';
+
+  if (clientDeviceId) {
+    // Acende dot no device list
+    const dot = document.querySelector(`#dot-${clientDeviceId.slice(0,8)}`);
+    if (dot) dot.className = 'device-dot on';
+
+    // ITEM 1: se o dispositivo ainda não tem nome, abre modal automaticamente
+    const names = loadDeviceNames();
+    if (!names[clientDeviceId]) {
+      // Pequeno delay para o admin terminar de carregar
+      setTimeout(() => openRenameModal(clientDeviceId), 800);
+    }
+  }
   return clientDeviceId;
 }
 
@@ -485,8 +807,10 @@ function setRTC(state) {
     failed:       ['failed',     'falhou'],
   };
   const [cls, txt] = states[state] ?? ['', state];
-  document.getElementById('rtc-dot').className   = `rtc-dot ${cls}`;
+  document.getElementById('rtc-dot').className    = `rtc-dot ${cls}`;
   document.getElementById('rtc-label').textContent = txt;
+  // Atualiza pill quando câmera conecta/desconecta
+  updateStatusPill();
 }
 
 function onStream(stream) {
@@ -522,6 +846,8 @@ function onStream(stream) {
   ['btn-stop','btn-stop2'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = 'flex';
   });
+
+  updateStatusPill(); // câmera ao vivo → pill "Câmera ao vivo"
 }
 
 function onStop() {
@@ -549,6 +875,7 @@ function onStop() {
   document.getElementById('a-cam-stat').textContent = 'Off';
   document.getElementById('a-cam-sub').textContent  = 'inativa';
   setRTC('inactive');
+  updateStatusPill();
 }
 
 async function connectRTC() {
@@ -597,15 +924,21 @@ async function stopAll() {
 function processPoint(row) {
   const p = { lat: row.lat, lon: row.lon, acc: row.accuracy ?? 0, t: new Date(row.created_at).getTime() };
   gpsCache.push(p);
+  lastPointTimestamp = Date.now(); // ITEM 3: registra timestamp do último ponto
   document.getElementById('a-gps-count').textContent   = gpsCache.length;
   document.getElementById('a-last-time').textContent   = new Date(p.t).toLocaleTimeString('pt-BR');
   document.getElementById('coord-display').textContent = `${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}`;
   document.getElementById('a-lat').textContent = p.lat.toFixed(6);
   document.getElementById('a-lon').textContent = p.lon.toFixed(6);
   document.getElementById('a-acc').textContent = Math.round(p.acc) + ' m';
-  document.getElementById('dot-client').className = 'device-dot on';
+
+  // Acende dot do dispositivo que enviou
+  const dot = document.querySelector(`#dot-${(row.device_id ?? '').slice(0,8)}`);
+  if (dot) dot.className = 'device-dot on';
+
   updateMaps(p.lat, p.lon);
   addHist(p);
+  updateStatusPill(); // ITEM 3: atualiza pill ao receber ponto
 }
 
 supabase.channel('admin-gps')
@@ -617,22 +950,34 @@ supabase.channel('admin-gps')
 async function loadGPS() {
   const since = new Date(Date.now() - 24*3600000).toISOString();
   const { data } = await supabase
-    .from('gps_points').select('lat,lon,accuracy,created_at')
+    .from('gps_points').select('lat,lon,accuracy,created_at,device_id')
     .gte('created_at', since).order('created_at', { ascending: true }).limit(200);
   if (!data?.length) return;
   data.forEach(r => {
     gpsCache.push({ lat: r.lat, lon: r.lon, acc: r.accuracy ?? 0, t: new Date(r.created_at).getTime() });
   });
   const last = gpsCache.at(-1);
+
+  // ITEM 3: calcula timestamp do último ponto carregado
+  lastPointTimestamp = last.t;
+
   document.getElementById('a-gps-count').textContent   = gpsCache.length;
   document.getElementById('a-last-time').textContent   = new Date(last.t).toLocaleTimeString('pt-BR');
   document.getElementById('coord-display').textContent = `${last.lat.toFixed(5)}, ${last.lon.toFixed(5)}`;
   document.getElementById('a-lat').textContent = last.lat.toFixed(6);
   document.getElementById('a-lon').textContent = last.lon.toFixed(6);
   document.getElementById('a-acc').textContent = Math.round(last.acc) + ' m';
-  document.getElementById('dot-client').className = 'device-dot on';
+
+  // Acende dot do device que aparece nos dados históricos
+  const lastDeviceId = data.at(-1)?.device_id;
+  if (lastDeviceId) {
+    const dot = document.querySelector(`#dot-${lastDeviceId.slice(0,8)}`);
+    if (dot) dot.className = 'device-dot on';
+  }
+
   updateMaps(last.lat, last.lon);
   gpsCache.slice(-50).reverse().forEach(p => addHist(p));
+  updateStatusPill(); // ITEM 3
 }
 
 // ── Histórico ────────────────────────────────
@@ -684,24 +1029,13 @@ document.querySelectorAll('.s-item[data-view]').forEach(item => {
 });
 
 // ── Boot ──────────────────────────────────────
+renderDeviceList(); // ITEM 1: renderiza dispositivos conhecidos imediatamente
 await loadGPS();
-await getDeviceId();
+await getDeviceId(); // após load, pode abrir modal se ID novo
 </script>
-</body>
-</html>
+
+<!-- Patch: geocodificação reversa + gravação admin -->
 <script type="module">
-// Patch: adiciona endereço, toggle rastro e gravação ao admin já carregado
-// (executado após o módulo principal)
-
-// ── Toggle rastro no admin ────────────────────
-let adminTrail = true;
-document.getElementById('btn-trail-admin')?.addEventListener('click', function() {
-  adminTrail = !adminTrail;
-  this.textContent = adminTrail ? 'Com rastro' : 'Só posição';
-  // pathDash e pathGPS são variáveis do módulo principal — acessa via window se necessário
-});
-
-// ── Geocodificação reversa ────────────────────
 let geoTimer = null;
 function adminGeocode(lat, lon) {
   clearTimeout(geoTimer);
@@ -718,9 +1052,6 @@ function adminGeocode(lat, lon) {
   }, 2500);
 }
 
-// Intercepta processPoint para geocodificar
-const origProcessPoint = window._processPoint;
-// Observa mudanças no coord-display para disparar geocode
 const coordEl = document.getElementById('coord-display');
 if (coordEl) {
   new MutationObserver(() => {
@@ -730,12 +1061,11 @@ if (coordEl) {
   }).observe(coordEl, { childList: true, characterData: true, subtree: true });
 }
 
-// ── Gravação no admin ─────────────────────────
 let adminRecorder = null, adminChunks = [];
 
 function adminStartRec() {
   const video = document.getElementById('admin-video');
-  if (!video?.srcObject) { return; }
+  if (!video?.srcObject) return;
   adminChunks = [];
   adminRecorder = new MediaRecorder(video.srcObject);
   adminRecorder.ondataavailable = e => { if (e.data.size) adminChunks.push(e.data); };
@@ -764,3 +1094,5 @@ document.getElementById('btn-rec-admin')?.addEventListener('click', () => {
   else adminStartRec();
 });
 </script>
+</body>
+</html>
