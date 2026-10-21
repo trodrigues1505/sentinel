@@ -34,6 +34,7 @@ export class CameraManager {
   get isMicActive() { return this.#micStream !== null; }
   get camStream()   { return this.#camStream; }
   get micStream()   { return this.#micStream; }
+  get usingFront()  { return this.#useFront; }
 
   constructor({ onStart, onStop, onError, onCommand } = {}) {
     this.#onStart   = onStart   ?? (() => {});
@@ -59,8 +60,6 @@ export class CameraManager {
     this.#reconnecting = true;
     try {
       if (camDead) {
-        // Limpa a stream morta sem disparar onStop para a UI
-        // (a UI já mostrou câmera ativa — só vamos reconectar)
         this.#camStream.getTracks().forEach(t => t.stop());
         this.#camStream = null;
         await this.startCamera({ silent: true });
@@ -71,7 +70,6 @@ export class CameraManager {
         await this.startMic({ silent: true });
       }
     } catch {
-      // Se falhar a reconexão, notifica normalmente
       if (this.#lastMode === 'camera') this.#onStop('camera');
       if (this.#lastMode === 'mic')    this.#onStop('mic');
     } finally {
@@ -79,7 +77,6 @@ export class CameraManager {
     }
   };
 
-  // Verifica se todas as tracks de uma stream estão mortas
   #isStreamDead(stream) {
     const tracks = stream.getTracks();
     return tracks.length > 0 && tracks.every(t => t.readyState === 'ended');
@@ -99,23 +96,16 @@ export class CameraManager {
         audio: false,
       });
 
-      // PROBLEMA 3: monitora o 'ended' nas tracks para detectar
-      // quando o SO mata a câmera (ex: ligação entrante, tela apaga)
       this.#camStream.getVideoTracks().forEach(track => {
         track.addEventListener('ended', () => {
-          // Track morreu — limpamos a referência.
-          // O visibilitychange vai reconectar quando o usuário voltar.
           if (this.#camStream) {
             this.#camStream = null;
-            // Só dispara onStop se não estiver tentando reconectar
             if (!this.#reconnecting) this.#onStop('camera');
           }
         });
       });
 
       this.#lastMode = 'camera';
-      // silent=true durante reconexão automática: UI já está correta,
-      // só precisamos passar a nova stream para o WebRTC
       this.#onStart(this.#camStream, 'camera', silent);
     } catch (err) {
       this.#onError(err.name === 'NotAllowedError'
@@ -132,12 +122,22 @@ export class CameraManager {
     this.#onStop('camera');
   }
 
+  // NOVO: separa a troca de câmera em um método explícito,
+  // reaproveitado tanto pelo flip local quanto pelo comando remoto.
+  // silent=true evita o onStop/onStart "piscar" a UI inteira —
+  // só troca o stream por baixo.
+  async setFacing(front, { silent = false } = {}) {
+    if (this.#useFront === front) return;
+    this.#useFront = front;
+    if (!this.isCamActive) return; // nada ligado, só guarda a preferência
+    this.#camStream.getTracks().forEach(t => t.stop());
+    this.#camStream = null;
+    if (!silent) this.#onStop('camera'); // reseta UI antes de reabrir
+    await this.startCamera({ silent });
+  }
+
   async flip() {
-    this.#useFront = !this.#useFront;
-    if (this.isCamActive) {
-      this.stopCamera();
-      await this.startCamera();
-    }
+    await this.setFacing(!this.#useFront);
   }
 
   // ── Microfone ─────────────────────────────
@@ -153,7 +153,6 @@ export class CameraManager {
         video: false,
       });
 
-      // PROBLEMA 3: mesma lógica para o mic
       this.#micStream.getAudioTracks().forEach(track => {
         track.addEventListener('ended', () => {
           if (this.#micStream) {
@@ -192,26 +191,18 @@ export class CameraManager {
     videoEl.srcObject = null;
   }
 
-  // ── PROBLEMA 2: Fullscreen com suporte mobile ──
-  // Uso: CameraManager.requestFullscreen(videoElement)
-  // Tenta na ordem: API padrão → webkit (iOS Safari) → fallback CSS
   static requestFullscreen(videoEl) {
     if (!videoEl) return;
-
-    // iOS Safari: usa webkitEnterFullscreen diretamente no <video>
     if (typeof videoEl.webkitEnterFullscreen === 'function') {
       videoEl.webkitEnterFullscreen();
       return;
     }
-
-    // Padrão W3C (Chrome, Firefox, Edge, Samsung Browser)
     const el = videoEl.closest('.cam-wrap') ?? videoEl;
     if (el.requestFullscreen)            { el.requestFullscreen(); return; }
     if (el.webkitRequestFullscreen)      { el.webkitRequestFullscreen(); return; }
     if (el.mozRequestFullScreen)         { el.mozRequestFullScreen(); return; }
     if (el.msRequestFullscreen)          { el.msRequestFullscreen(); return; }
 
-    // Último recurso: abre o vídeo em nova aba (funciona em qualquer browser)
     if (videoEl.srcObject) {
       const stream = videoEl.srcObject;
       const tmpVideo = document.createElement('video');
@@ -254,10 +245,13 @@ export class CameraManager {
           this.#onCommand(row.command);
 
           switch (row.command) {
-            case 'camera_start': await this.startCamera(); break;
-            case 'camera_stop':        this.stopCamera();  break;
-            case 'mic_start':   await this.startMic();    break;
-            case 'mic_stop':           this.stopMic();    break;
+            case 'camera_start':              await this.startCamera(); break;
+            case 'camera_stop':                     this.stopCamera();  break;
+            case 'mic_start':                 await this.startMic();    break;
+            case 'mic_stop':                         this.stopMic();    break;
+            // NOVO — necessário para o admin controlar frontal/traseira
+            case 'camera_facing_user':        await this.setFacing(true);  break;
+            case 'camera_facing_environment': await this.setFacing(false); break;
           }
         }
       )
