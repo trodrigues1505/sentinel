@@ -136,6 +136,15 @@ export class GPSTracker {
       CONFIG.gps.options
     );
 
+    // CORREÇÃO: o listener de retry precisa existir mesmo que a
+    // primeira tentativa de Wake Lock falhe (ex: NotAllowedError
+    // por o documento ainda não estar "visible" no instante exato
+    // da chamada, comum em PWA recém-aberto). Antes, esse listener
+    // só era adicionado DENTRO do try de #acquireWakeLock — se a
+    // primeira tentativa falhasse, o wake lock nunca mais era
+    // readquirido, mesmo com o app voltando a ficar visível.
+    document.addEventListener('visibilitychange', this.#handleVisibilityChange);
+
     // ITEM 2: ativa Wake Lock e keepalive do SW
     this.#acquireWakeLock();
     this.#startSWKeepalive();
@@ -161,19 +170,18 @@ export class GPSTracker {
   // Reativamos ao `visibilitychange` (quando volta para o app).
   async #acquireWakeLock() {
     if (!('wakeLock' in navigator)) return; // não suportado
+    if (this.#wakeLock) return; // já ativo
     try {
       this.#wakeLock = await navigator.wakeLock.request('screen');
-
-      // Se o browser liberou o wake lock automaticamente (ex: minimizou),
-      // tenta readquirir quando o usuário volta para o app.
       this.#wakeLock.addEventListener('release', () => {
         this.#wakeLock = null;
         // Não tenta readquirir aqui — o visibilitychange cuida disso
       });
-
-      document.addEventListener('visibilitychange', this.#handleVisibilityChange);
     } catch (e) {
-      // Pode falhar se bateria baixa ou permissão negada — não crítico
+      // Pode falhar se bateria baixa, documento não visível no
+      // instante da chamada, ou permissão negada — não é crítico,
+      // o listener de visibilitychange (registrado em start()) vai
+      // tentar de novo na próxima vez que o app ficar visível.
       console.warn('[GPS] Wake Lock não obtido:', e.message);
     }
   }
